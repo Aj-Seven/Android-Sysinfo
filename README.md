@@ -11,10 +11,13 @@ It is Purely Written in Bash Language.
 
 🛠Installation 🛠
 
+Automatic Installation:
+>curl https://raw.githubusercontent.com/Aj-Seven/Android-Sysinfo/main/sysinfo.sh >/data/data/com.termux/files/usr/bin/sysinfo && chmod +x /data/data/com.termux/files/usr/bin/sysinfo && sysinfo
 
+Manual Way:
 Clone this Repository by this Command.
 
-  >git clone https://github.com/Aj-Seven/Android-Sysinfo ~/
+  >git clone https://github.com/Aj-Seven/Android-Sysinfo ~/Android-SysInfo
 
   Now goto Cloned Repository Folder.
 
