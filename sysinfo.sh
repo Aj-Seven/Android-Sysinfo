@@ -23,8 +23,7 @@ if [[ ! -f /data/data/com.termux/files/usr/bin/figlet ]]; then
     pkg install figlet -y
 fi
 
-command clear
-
+#main function
 function main() {
     echo -e "$blue"
     figlet -t -c -f term SYSTEM INFORMATION
@@ -83,36 +82,51 @@ function main() {
 main
 }
 
+#memory usage function
 memusage() {
-    echo -e $blue
-    free -m | awk 'NR==2{printf "Memory Usage: %s/%sMB (%.2f%%)\n", $3,$2,$3*100/$2 }'
+    BUFFCACHE_MEM=$(free -m | awk '/Mem/ {print $6}')
+    FREE_BUFF_MEM=$(free -m | awk '/Mem/ {print $4}')
+    AVAILABLE_MEM=$(free -m | awk '/Mem/ {print $7}')
+    TOTAL_MEM=$(free -m | awk '/Mem/ {print $2}')
+    TOTAL_USED_MEM=$(( $TOTAL_MEM - $AVAILABLE_MEM ))
+    PERCENT_USED_MEM=$(free -m | awk 'NR==2{printf "%.2f%%\n", $3*100/$2 }')
+    echo -e "$cyan Total Memory\t\t:$red $TOTAL_MEM $c_off MB"
+    echo -e "$cyan Used Memory\t\t:$red $TOTAL_USED_MEM $c_off MB"
+    echo -e "$cyan Available Memory\t:$red $AVAILABLE_MEM $c_off MB"
+    echo -e "$cyan Buffer+Cache Memory\t:$red $BUFFCACHE_MEM $c_off MB"
+    echo -e "$cyan Free Buff+Cache Memory\t:$red $FREE_BUFF_MEM $c_off MB"
+    echo -e "$cyan Memory Percentage Usage:$red $PERCENT_USED_MEM $c_off"
     echo -e $c_off
 }
 
+#CPU Information
 cpu() {
     if [[ ! -f /data/data/com.termux/files/usr/bin/cpufetch ]]; then
         echo -e "$red CPUFetch Program Not Found... Installing $c_off"
         pkg install cpufetch -y
         echo "$green CPUFetch Program Installed... Executing $c_off"
         sleep 0.2s;
-        command cpufetch
+        command cpufetch --color 239,90,45:210,200,200:0,0,0:100,200,45:0,200,200
         echo -e $red
         top -bn1 | grep load | awk '{printf "CPU Load: %.2f\n", $(NF-2)}'
         echo -e $c_off
     else
-        command cpufetch
+        command cpufetch --color 239,90,45:210,200,200:0,0,0:100,200,45:0,200,200
         echo -e $red
         top -bn1 | grep load | awk '{printf "CPU Load: %.2f\n", $(NF-2)}'
         echo -e $c_off
     fi
 }
 
+#Disk Usage
 disk() {
     echo -e "$blue"
     df -h | awk '$NF=="/storage/emulated"{printf "Disk Usage: %d/%dGB (%s)\n", $3,$2,$5}'
     echo -e "$c_off"
 
 }
+
+#OS info By Neofetch
 OS() {
     if [[ ! -f /data/data/com.termux/files/usr/bin/neofetch || ! -f /data/data/com.termux/files/usr/bin/pv ]]; then
         echo -e "$red Neofetch Package not Found... Installing $c_off"
@@ -120,12 +134,14 @@ OS() {
         echo -e $green "Installed the Package... Executing $c_off"
         sleep 0.7s;
         command clear
-        command neofetch --colors 3 4 5 2 1 | pv -qL 250
+        command neofetch --colors 3 4 5 2 1 | pv -qL 350
     else
-        command neofetch --colors 3 4 5 2 1 | pv -qL 250
+        command neofetch --colors 3 4 5 2 1 | pv -qL 350
     fi
 }
 
+
+#Network Information
 netstats () {
     hostname=$(hostname)
     echo -e "$cyan Host Name: $white $b_black $hostname $c_off"
@@ -142,6 +158,8 @@ netstats () {
     fi
 }
 
+
+#System Base Information like kernel uptime
 sysbaseinfo() {
     echo -e $b_black
     kn=$(uname -s)
@@ -161,6 +179,8 @@ sysbaseinfo() {
     echo -e $c_off
 }
 
+
+#Network Speed Checker
 ispeed() {
     if [[ ! -f /data/data/com.termux/files/usr/bin/speedtest-go ]]; then
         echo "$red Speedtest Program Not Installed... Installing $c_off"
@@ -179,4 +199,41 @@ ispeed() {
     fi
 }
 
-main
+#Help Function while how to use the Argument
+#Based running the Script
+_help() {
+    echo -e "$b_black"
+    echo -e "Usage: Options.";
+    echo -e "--os|os - OS Info By Neofetch."
+    echo -e "--disk|D - Shows the disk Usage."
+    echo -e "--cpu|C - CPU INFORMATION."
+    echo -e "--mem|M - Shows the Memory usage."
+    echo -e "--sysbinfo|s - Shows About Device Info."
+    echo -e "--netstat|N - Shows About NetWork Stats."
+    echo -e "--speed|S - Shows the Internet Speed."
+    echo -e "--help|h - Shows this Help Info."
+    echo -e "$red ***If Don't know how to do You can Directly run the Script without passing any Options***"
+    echo -e "$c_off"
+}
+
+if [ $# -eq 0 ]; then
+    command clear
+    main
+fi
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        os|--os) OS;;
+        D|--disk) disk;;
+        C|--cpu) cpu;;
+        M|--mem) memusage;;
+        s|--sysbinfo) sysbaseinfo;;
+        N|--netstat) netstats;;
+        S|--speed) ispeed;;
+        *) echo "Unknown Option: $1";
+            _help
+            exit 1;;
+    esac
+    shift
+done
+
