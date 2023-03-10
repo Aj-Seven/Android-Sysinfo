@@ -7,6 +7,13 @@ Termux-App🤩...Like📜
 
  >Fetches the Disk,CPU,Memory Info's.
 
+ >Now you can give option's without running the script directly, like Below:
+ >sysinfo M #for Memory Info
+
+ >sysinfo C #for CPU Info
+
+ >sysinfo h #for help and usage, etc...
+
 It is Purely Written in Bash Language.
 
 🛠Installation 🛠
