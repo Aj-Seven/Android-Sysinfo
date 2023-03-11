@@ -183,9 +183,9 @@ sysbaseinfo() {
 #Network Speed Checker
 ispeed() {
     if [[ ! -f /data/data/com.termux/files/usr/bin/speedtest-go ]]; then
-        echo "$red Speedtest Program Not Installed... Installing $c_off"
+        echo -e "$red Speedtest Program Not Installed... Installing $c_off"
         pkg install speedtest-go -y
-        echo "$green Installed the Program... Executing:) $c_off"
+        echo -e "$green Installed the Program... Executing:) $c_off"
         sleep 0.5s;
         echo -e "$green Plzz wait... This will take few minutes $c_off"
         echo -e $purple
