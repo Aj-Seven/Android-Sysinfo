@@ -22,7 +22,7 @@ It is Purely Written in Bash Language.
 
 If you Installed this Script Previously run this Command:
 
- >rm $PREFIX/usr/bin/sysinfo
+ >rm $PREFIX/bin/sysinfo
 
  Now copy and paste below 👇 Automatic Installation codes..:)
 
