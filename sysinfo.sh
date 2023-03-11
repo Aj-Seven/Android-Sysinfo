@@ -104,7 +104,7 @@ cpu() {
     if [[ ! -f /data/data/com.termux/files/usr/bin/cpufetch ]]; then
         echo -e "$red CPUFetch Program Not Found... Installing $c_off"
         pkg install cpufetch -y
-        echo "$green CPUFetch Program Installed... Executing $c_off"
+        echo -e "$green CPUFetch Program Installed... Executing $c_off"
         sleep 0.2s;
         command cpufetch --color 239,90,45:210,200,200:0,0,0:100,200,45:0,200,200
         echo -e $red
