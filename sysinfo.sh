@@ -76,7 +76,6 @@ function main() {
             ;;
 
     esac
-main
 }
 
 #memory usage function
@@ -183,8 +182,10 @@ _help() {
 }
 
 if [ $# -eq 0 ]; then
-    command clear
-    main
+       command clear
+    while true; do
+        main
+    done
 fi
 
 while [[ "$#" -gt 0 ]]; do
