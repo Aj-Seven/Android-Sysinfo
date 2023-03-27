@@ -7,7 +7,7 @@
 
 ### Awesome Android-System Info.
 <details>
-<summary> <h4> Details </h4> </summary>
+<summary> <h4> Details [NEW] </h4> </summary>
 
 - This Custom Utility Provides All Android Information in one Script. Like this Below :point_down:
 
@@ -19,14 +19,18 @@
 
 > Added the Options as Arguments, Now Able to Run the Specific Function of the Script.
 
+> Added Battery Info Function.
+
 </details>
 
-![sysinfo-main](https://user-images.githubusercontent.com/89263112/224524131-9772b9ec-9b7d-474b-a412-e195a73b5175.png)
+![main](https://user-images.githubusercontent.com/89263112/227987239-5417a154-8b4a-4b2c-a30b-624883aeefb6.png)
 
 ## Installation sysinfo :white_check_mark:
 
 <details>
 <summary> <h3> Notice </h3> </summary>
+
+- You have to install Latest Version Termux on F-Droid [here](https://f-droid.org/repo/com.termux_118.apk)
 
 - If you Installed this script before Run this command below :point_down:
 
@@ -40,9 +44,9 @@ rm $PREFIX/bin/sysinfo
 :star2: using Curl
 
 ``` bash
-curl https://raw.githubusercontent.com/Aj-Seven/Android-Sysinfo/master/sysinfo.sh >$PREFIX/bin/sysinfo && chmod +x $PREFIX/bin/sysinfo
+curl https://raw.githubusercontent.com/Aj-Seven/Android-Sysinfo/master/sys-install.sh && bash sys-install.sh
 ```
-- Now Restart the Termux-App
+- Now It will Install the Script with Required Dependencies...
 
 > Now execute It
 
@@ -51,11 +55,11 @@ sysinfo
 ```
 
 ----
-# :camera_flash: Screenshots / OverView
+## :camera_flash: Screenshots
 
 - This screenshots were taken by [AwesomeShot](https://github.com/Awesomesh0t/awesomeshot)
 
-<details open>
+<details>
 <summary> Show Case </summary>
 
 <details>
@@ -169,6 +173,25 @@ sysinfo --speed
 </details>
 
 ![speedtest](https://user-images.githubusercontent.com/89263112/224524239-7b99aaee-73f4-43f1-b5f9-cf73e9def621.png)
+
+<details>
+<summary> Battery Stat </summary>
+
+- Shows the Device Battery stats with live Mode.
+
+``` bash
+sysinfo B
+```
+
+- OR
+
+``` bash
+sysinfo --battery
+```
+</details>
+
+![battery](https://user-images.githubusercontent.com/89263112/227990012-4cf1a824-0ac8-459f-a4a9-eee76b4f890b.png)
+
 </details>
 
 ----
