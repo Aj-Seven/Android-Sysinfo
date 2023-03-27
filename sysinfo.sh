@@ -35,6 +35,7 @@ function main() {
     echo -e "05) System BaseInfo"
     echo -e "06) Network Stats"
     echo -e "07) Internet Speed"
+    echo -e "08) Battery Stats"
     echo -e "00) Exit"
     echo -e "$c_off"
     read -n1 opt
@@ -46,6 +47,7 @@ function main() {
         5) sysbaseinfo ;;
         6) netstats ;;
         7) ispeed ;;
+        8) battery;;
         0)  echo -e $red "Exiting...:)$c_off"
             sleep 0.6s;
             exit 0;
@@ -142,6 +144,24 @@ ispeed() {
         echo -e $c_off
 }
 
+battery() {
+    termux-battery-status | jtbl -r | awk '{ print "\033[0;95m" $1 "\033[0;0m" "\n\t" "\033[0;96m" $2 "\033[0;0m" }'
+    echo -e $yellow
+    echo -e "Press 'l' for live battery test"
+    echo -e "Press 'q' or 'ctrl+c' to quit"
+    echo -e $c_off
+    read -N 1 key
+    if [[ $key = "l" ]]; then
+        while true; do
+            termux-battery-status | jtbl -r | awk '{ print "\033[0;95m" $1 "\033[0;0m" "\n\t" "\033[0;96m" $2 "\033[0;0m" }'
+    read -N 1 -t 0.50 key
+    if [[ $key = "q" ]] || [[ $key = "ctrl+c" ]]; then
+        exit
+    fi
+        done
+    fi
+}
+
 #Help Function while how to use the Argument
 #Based running the Script
 _help() {
@@ -154,6 +174,7 @@ _help() {
     echo -e "--sysbinfo|s - Shows About Device Info."
     echo -e "--netstat|N - Shows About NetWork Stats."
     echo -e "--speed|S - Shows the Internet Speed."
+    echo -e "--battery|B - Battery Stat of this device."
     echo -e "--help|h - Shows this Help Info."
     echo -e "$red ***If Don't know how to do You can Directly run the Script without passing any Options***"
     echo -e "$c_off"
@@ -175,6 +196,7 @@ while [[ "$#" -gt 0 ]]; do
         s|--sysbinfo) sysbaseinfo;;
         N|--netstat) netstats;;
         S|--speed) ispeed;;
+        B|--battery) battery;;
         h|--help) _help ;;
         *) echo "Unknown Option: $1";
             _help
