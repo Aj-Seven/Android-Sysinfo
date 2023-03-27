@@ -43,38 +43,22 @@ function main() {
     echo -e "07) Internet Speed"
     echo -e "00) Exit"
     echo -e "$c_off"
-    read opt
+    read -n1 opt
     case $opt in
-        01 | 1)
-            OS
-            ;;
-        02 | 2)
-            disk
-            ;;
-        03 | 3)
-            cpu
-            ;;
-        04 | 4)
-            memusage
-            ;;
-        05 | 5)
-            sysbaseinfo
-            ;;
-        06 | 6)
-            netstats
-            ;;
-        07 | 7)
-            ispeed
-            ;;
-        00 | 0)
-            echo -e $red "Exiting...:)$c_off"
+        1) OS ;;
+        2) disk ;;
+        3) cpu ;;
+        4) memusage ;;
+        5) sysbaseinfo ;;
+        6) netstats ;;
+        7) ispeed ;;
+        0)  echo -e $red "Exiting...:)$c_off"
             sleep 0.6s;
             exit 0;
             ;;
         *)
             echo -e "$cyan Error Selection...Try Again... $c_off"
             ;;
-
     esac
 }
 
@@ -197,6 +181,7 @@ while [[ "$#" -gt 0 ]]; do
         s|--sysbinfo) sysbaseinfo;;
         N|--netstat) netstats;;
         S|--speed) ispeed;;
+        h|--help) _help ;;
         *) echo "Unknown Option: $1";
             _help
             exit 1;;
