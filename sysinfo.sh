@@ -19,9 +19,6 @@ b_purple='\033[95m'
 b_cyan='\033[46m'
 b_white='\033[47m'
 
-if [[ ! -f /data/data/com.termux/files/usr/bin/figlet ]]; then
-    pkg install figlet -y
-fi
 
 #main function
 function main() {
@@ -101,21 +98,10 @@ memusage() {
 
 #CPU Information
 cpu() {
-    if [[ ! -f /data/data/com.termux/files/usr/bin/cpufetch ]]; then
-        echo -e "$red CPUFetch Program Not Found... Installing $c_off"
-        pkg install cpufetch -y
-        echo -e "$green CPUFetch Program Installed... Executing $c_off"
-        sleep 0.2s;
         command cpufetch --color 239,90,45:210,200,200:0,0,0:100,200,45:0,200,200
         echo -e $red
         top -bn1 | grep load | awk '{printf "CPU Load: %.2f\n", $(NF-2)}'
         echo -e $c_off
-    else
-        command cpufetch --color 239,90,45:210,200,200:0,0,0:100,200,45:0,200,200
-        echo -e $red
-        top -bn1 | grep load | awk '{printf "CPU Load: %.2f\n", $(NF-2)}'
-        echo -e $c_off
-    fi
 }
 
 #Disk Usage
@@ -128,16 +114,7 @@ disk() {
 
 #OS info By Neofetch
 OS() {
-    if [[ ! -f /data/data/com.termux/files/usr/bin/neofetch || ! -f /data/data/com.termux/files/usr/bin/pv ]]; then
-        echo -e "$red Neofetch Package not Found... Installing $c_off"
-        pkg install neofetch pv -y
-        echo -e $green "Installed the Package... Executing $c_off"
-        sleep 0.7s;
-        command clear
         command neofetch --colors 3 4 5 2 1 | pv -qL 350
-    else
-        command neofetch --colors 3 4 5 2 1 | pv -qL 350
-    fi
 }
 
 
@@ -182,21 +159,10 @@ sysbaseinfo() {
 
 #Network Speed Checker
 ispeed() {
-    if [[ ! -f /data/data/com.termux/files/usr/bin/speedtest-go ]]; then
-        echo -e "$red Speedtest Program Not Installed... Installing $c_off"
-        pkg install speedtest-go -y
-        echo -e "$green Installed the Program... Executing:) $c_off"
-        sleep 0.5s;
         echo -e "$green Plzz wait... This will take few minutes $c_off"
         echo -e $purple
         command speedtest-go
         echo -e $c_off
-    else
-        echo -e "$green Plzz wait... This will take few minutes $c_off"
-        echo -e $purple
-        command speedtest-go
-        echo -e $c_off
-    fi
 }
 
 #Help Function while how to use the Argument
