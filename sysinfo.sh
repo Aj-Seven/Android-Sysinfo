@@ -13,12 +13,6 @@ white='\033[0;97m' #White
 b_black='\033[40m'
 b_red='\033[41m'
 b_green='\033[42m'
-b_yellow='\033[43m'
-b_blue='\033[44m'
-b_purple='\033[95m'
-b_cyan='\033[46m'
-b_white='\033[47m'
-
 
 #main function
 function main() {
