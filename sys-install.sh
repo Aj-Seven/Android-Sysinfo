@@ -62,8 +62,9 @@ status=$?
 if [ "$status" != 0 ]; then
     echo -e "$cyan (Installing python...)"
     apt install -y python
-    pip install jtbl
 fi
+
+pip install jtbl
 
 #install termux-api pkg...
 apt install -y termux-api
