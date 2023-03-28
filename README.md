@@ -46,7 +46,7 @@ rm $PREFIX/bin/sysinfo
 :star2: using Curl
 
 ``` bash
-curl https://raw.githubusercontent.com/Aj-Seven/Android-Sysinfo/master/sys-install.sh && bash sys-install.sh
+curl -o sys-install.sh https://raw.githubusercontent.com/Aj-Seven/Android-Sysinfo/master/sys-install.sh && bash sys-install.sh
 ```
 - Now It will Install the Script with Required Dependencies...
 
