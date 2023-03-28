@@ -32,6 +32,8 @@
 
 - You have to install Latest Version Termux on F-Droid [here](https://f-droid.org/repo/com.termux_118.apk)
 
+- And install termux-api latest version from F-Droid [here](https://f-droid.org/repo/com.termux.api_50.apk)
+
 - If you Installed this script before Run this command below :point_down:
 
 ``` bash
@@ -59,7 +61,7 @@ sysinfo
 
 - This screenshots were taken by [AwesomeShot](https://github.com/Awesomesh0t/awesomeshot)
 
-<details>
+<details open>
 <summary> Show Case </summary>
 
 <details>
