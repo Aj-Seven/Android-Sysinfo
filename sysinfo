@@ -68,10 +68,10 @@ memusage() {
     PERCENT_USED_MEM=$(free -m | awk 'NR==2{printf "%.2f%%\n", $3*100/$2 }')
     echo -e "$cyan Total Memory\t\t:$red $TOTAL_MEM $c_off MB"
     echo -e "$cyan Used Memory\t\t:$red $TOTAL_USED_MEM $c_off MB"
-    echo -e "$cyan Available Memory\t:$red $AVAILABLE_MEM $c_off MB"
+    echo -e "$cyan Available Memory\t\t:$red $AVAILABLE_MEM $c_off MB"
     echo -e "$cyan Buffer+Cache Memory\t:$red $BUFFCACHE_MEM $c_off MB"
     echo -e "$cyan Free Buff+Cache Memory\t:$red $FREE_BUFF_MEM $c_off MB"
-    echo -e "$cyan Memory Percentage Usage:$red $PERCENT_USED_MEM $c_off"
+    echo -e "$cyan Memory Percentage Usage\t:$red $PERCENT_USED_MEM $c_off"
     echo -e $c_off
 }
 
