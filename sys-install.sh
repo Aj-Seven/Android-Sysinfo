@@ -1,4 +1,4 @@
-#!$PREFIX/bin/bash
+#!/data/data/com.termux/files/usr/bin/bash
 red='\033[1;91m'
 green='\033[1;92m'
 off='\033[0;0m'
@@ -9,11 +9,14 @@ white='\033[1;97m'
 echo -e $b_black $white
 echo -e "$red Installing Required Dependecies. plzz wait...:) $off"
 
+#Update the pkgs...
+pkg update && pkg upgrade
+
 #install curl pkg...
 curl --version
 status=$?
 if [ "$status" != 0 ]; then
-    echo -e "$cyan (Installing Curl...) $pff"
+    echo -e "$cyan (Installing Curl...) $off"
     apt install -y curl
 fi
 
@@ -60,7 +63,7 @@ python --version
 pip --version
 status=$?
 if [ "$status" != 0 ]; then
-    echo -e "$cyan (Installing python...)"
+    echo -e "$cyan (Installing python...) $off"
     apt install -y python
 fi
 
