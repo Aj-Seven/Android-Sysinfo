@@ -6,7 +6,7 @@
 </p>
 
 ### Awesome Android-System Info.
-<details>
+<details open>
 <summary> <h4> Details [NEW] </h4> </summary>
 
 - This Custom Utility Provides All Android Information in one Script. Like this Below :point_down:
