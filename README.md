@@ -9,17 +9,17 @@
 <details open>
 <summary> <h4> Details [NEW] </h4> </summary>
 
-- This Custom Utility Provides All Android Information in one Script. Like this Below :point_down:
+##### This Custom Utility Provides All Android Information in one Script. Like this Below :point_down:
 
-> Fetches the OS and Architecture Info.
+- Fetches the OS and Architecture Info.
 
-> Shows the CPU and Memory Info.
+- Shows the CPU and Memory Info.
 
-> Shows the Network Stats and Internet-Speed of the Device.
+- Shows the Network Stats and Internet-Speed of the Device.
 
-> Added the Options as Arguments, Now Able to Run the Specific Function of the Script.
+- Added the Options as Arguments, Now Able to Run the Specific Function of the Script.
 
-> Added Battery Info Function.
+- Added Battery Info Function.
 
 </details>
 
