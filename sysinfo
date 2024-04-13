@@ -27,7 +27,7 @@ PRINT() {
 #main function
 function main() {
     echo -e ${BOLD} ${BLUE}
-    figlet -t -c -f term "SYSTEM INFORMATION"
+    figlet -t -c -f thick "SYSTEM INFORMATION"
     echo -e ${RESET}
     echo -e ${BOLD} ${YELLOW}
     figlet -c -t -f term "Github: https://github.com/Aj-Seven"
@@ -37,7 +37,7 @@ function main() {
     echo -e ${RESET}
     PRINT $UNDERLINE "Select the options below:"
     PRINT $BOLD $WHITE"
-        01) OS Info
+        01) System Overview
         02) Disk Fetch
         03) CPU Info
         04) Memory Fetch
@@ -48,7 +48,7 @@ function main() {
         00) Exit\n"
     read -n1 opt
     case $opt in
-        1) OS ;;
+        1) androidinfo ;;
         2) disk ;;
         3) cpu ;;
         4) memusage ;;
@@ -98,9 +98,20 @@ disk() {
 
 }
 
-#OS info By Neofetch
-OS() {
-        command neofetch --colors 3 4 5 2 1 | pv -qL 350
+#info about android software like model,version
+androidinfo() {
+    PRINT $BOLD"
+     $CYAN Brand:           $WHITE $(getprop ro.product.brand)
+     $CYAN Manufacturer:    $WHITE $(getprop ro.product.manufacturer)
+     $CYAN Device Model:    $WHITE $(getprop ro.product.model)
+     $CYAN Android Version: $WHITE $(getprop ro.build.version.release)
+     $CYAN SDK Version:     $WHITE $(getprop ro.build.version.sdk)
+     $CYAN Build Number:    $WHITE $(getprop ro.build.display.id)
+     $CYAN Build Date:      $WHITE $(date -d @$(getprop ro.build.date.utc))
+     $CYAN Baseband:        $WHITE $(getprop gsm.version.baseband)
+     $CYAN Build Type:      $WHITE $(getprop ro.build.type)
+     $CYAN Language:        $WHITE $(getprop persist.sys.locale)
+     $CYAN Timezone:        $WHITE $(getprop persist.sys.timezone)"
 }
 
 
@@ -169,7 +180,7 @@ battery() {
 #Based running the Script
 _help() {
     PRINT $BOLD $WHITE "Usage: Options.
-    --os|os - OS Info By Neofetch.
+    --android|A - Shows Android System Overview.
     --disk|D - Shows the disk Usage.
     --cpu|C - CPU INFORMATION.
     --mem|M - Shows the Memory usage.
@@ -190,7 +201,7 @@ fi
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        os|--os) OS;;
+        A|--android) androidinfo;;
         D|--disk) disk;;
         C|--cpu) cpu;;
         M|--mem) memusage;;
