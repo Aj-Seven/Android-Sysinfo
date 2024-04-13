@@ -68,12 +68,13 @@ function main() {
 
 #memory usage function
 memusage() {
-    BUFFCACHE_MEM=$(free -m | awk '/Mem/ {print $6}')
-    FREE_BUFF_MEM=$(free -m | awk '/Mem/ {print $4}')
-    AVAILABLE_MEM=$(free -m | awk '/Mem/ {print $7}')
-    TOTAL_MEM=$(free -m | awk '/Mem/ {print $2}')
-    TOTAL_USED_MEM=$(( $TOTAL_MEM - $AVAILABLE_MEM ))
-    PERCENT_USED_MEM=$(free -m | awk 'NR==2{printf "%.2f%%\n", $3*100/$2 }')
+    local mem_info=$(free -m | awk '/Mem/ {print}')
+    local TOTAL_MEM=$(echo "$mem_info" | awk '{print $2}')
+    local AVAILABLE_MEM=$(echo "$mem_info" | awk '{print $7}')
+    local TOTAL_USED_MEM=$(( TOTAL_MEM - AVAILABLE_MEM ))
+    local BUFFCACHE_MEM=$(echo "$mem_info" | awk '{print $6}')
+    local FREE_BUFF_MEM=$(echo "$mem_info" | awk '{print $4}')
+    local PERCENT_USED_MEM=$(free -m | awk 'NR==2{printf "%.2f%%\n", $3*100/$2 }')
     PRINT $BOLD $CYAN "Total Memory\t\t:$WHITE $TOTAL_MEM MB"
     PRINT $BOLD $CYAN "Used Memory\t\t:$WHITE $TOTAL_USED_MEM MB"
     PRINT $BOLD $CYAN "Available Memory\t:$WHITE $AVAILABLE_MEM MB"
