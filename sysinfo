@@ -85,10 +85,9 @@ memusage() {
 
 #CPU Information
 cpu() {
-        command cpufetch --color 239,90,45:210,200,200:0,0,0:100,200,45:0,200,200
-        echo -e ${RED}
-        top -bn1 | grep load | awk '{printf "CPU Load: %.2f\n", $(NF-2)}'
-        echo -e ${RESET}
+    command cpufetch --color 239,90,45:210,200,200:0,0,0:100,200,45:0,200,200
+    cpu_usage=$(ps aux | awk 'BEGIN {sum=0} {sum+=$3}; END {printf "%.2f%%\n",sum}')
+    PRINT $BOLD $RED "CPU Load: "$cpu_usage
 }
 
 #Disk Usage
