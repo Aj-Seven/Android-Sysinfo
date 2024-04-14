@@ -23,6 +23,25 @@ PRINT() {
     echo -e "${style}${color}${message}${RESET}"
 }
 
+#spinner function
+spinner() {
+    local message=$1
+    local pid=$2
+    local delay=0.1
+    local colors=("31;5")
+    local spinstr='⣾⣽⣻⢿⡿⣟⣯⣷'
+    local i=0
+    tput civis
+    while ps -p $pid > /dev/null; do
+        local color=${colors[i++ % ${#colors[@]}]}
+        printf "\e[${color}m%s\e[0m" "${spinstr:i++%${#spinstr}:1}"
+        sleep $delay
+        printf "\b"
+    done
+    tput cnorm
+    printf "   \b\b\b"
+}
+
 
 #main function
 function main() {
@@ -54,7 +73,7 @@ function main() {
         4) memusage ;;
         5) sysbaseinfo ;;
         6) netstats ;;
-        7) ispeed ;;
+        7) network_speed ;;
         8) battery;;
         0)  PRINT $RED "Exiting...:)"
             sleep 0.6s;
@@ -98,7 +117,7 @@ disk() {
 
 }
 
-#info about android software like model,version
+#info about android software
 androidinfo() {
     PRINT $BOLD"
      $CYAN Brand:           $WHITE $(getprop ro.product.brand)
@@ -153,11 +172,27 @@ sysbaseinfo() {
 
 
 #Network Speed Checker
-ispeed() {
-        PRINT $GREEN "Plzz wait... This will take few minutes."
-        echo -e ${CYAN}
-        command speedtest-go
-        echo -e ${RESET}
+network_speed() {
+    PRINT $UNDERLINE $YELLOW "Running SpeedTest, Please Wait..."
+    tmpfile=$(mktemp)
+    speedtest-go | grep -E "Download|Upload|Latency" > "$tmpfile" & 2>/dev/null
+
+    local pid=$!
+
+    spinner "Fetching innternet speed..." $pid
+
+    wait $pid
+
+    download=$(grep -oP "Download:\s+\K[0-9.]+" "$tmpfile")
+    upload=$(grep -oP "Upload:\s+\K[0-9.]+" "$tmpfile")
+    latency=$(grep -oP "Latency:\s+\K[0-9.]+" "$tmpfile")
+
+    PRINT $BOLD"
+     $CYAN Download speed: $WHITE $download Mbps
+     $CYAN Upload speed:   $WHITE $upload Mbps
+     $CYAN Latency:        $WHITE $latency ms"
+
+    rm "$tmpfile"
 }
 
 battery() {
@@ -207,7 +242,7 @@ while [[ "$#" -gt 0 ]]; do
         M|--mem) memusage;;
         s|--sysbinfo) sysbaseinfo;;
         N|--netstat) netstats;;
-        S|--speed) ispeed;;
+        S|--speed) network_speed;;
         B|--battery) battery;;
         h|--help) _help ;;
         *) PRINT $BOLD $YELLOW "Unknown Option: $1";
