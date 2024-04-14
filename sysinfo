@@ -46,7 +46,7 @@ spinner() {
 #main function
 function main() {
     echo -e ${BOLD} ${BLUE}
-    figlet -t -c -f thick "SYSTEM INFORMATION"
+    figlet -t -c -f term "SYSTEM INFORMATION"
     echo -e ${RESET}
     echo -e ${BOLD} ${YELLOW}
     figlet -c -t -f term "Github: https://github.com/Aj-Seven"
@@ -133,22 +133,91 @@ androidinfo() {
      $CYAN Timezone:        $WHITE $(getprop persist.sys.timezone)"
 }
 
+#wifi info
+wifi_info() {
+    local data=$(termux-wifi-connectioninfo)
+    local status=$(jq -r '.supplicant_state' <<< "$data")
+    local name=$(jq -r '.ssid' <<< "$data")
+    local hidden_state=$(jq -r '.ssid_hidden' <<< "$data")
+    local freq=$(jq -r '.frequency_mhz' <<< "$data")
+    local ip=$(jq -r '.ip' <<< "$data")
+    local mac_address=$(jq -r '.mac_address' <<< "$data")
+    local max_speed=$(jq -r '.link_speed_mbps' <<< "$data")
+
+    if [[ $status != "COMPLETED" ]]; then
+        PRINT $YELLOW "WiFi information not available."
+        return 1
+    fi
+    hidden_state=$( [[ "$hidden_state" == "true" ]] && echo "Yes" || echo "No" )
+
+    PRINT $BOLD"
+     $UNDERLINE $MAGENTA WiFi Info: ${RESET} $BOLD
+     $CYAN WiFi Name:    $WHITE $name
+     $CYAN Hidden State: $WHITE $hidden_state
+     $CYAN Frequency:    $WHITE $freq MHz
+     $CYAN IP Address:   $WHITE $ip
+     $CYAN MAC Address:  $WHITE $mac_address
+     $CYAN Max Speed:    $WHITE $max_speed mbps"
+}
+
+#cellular info
+cellular_info() {
+    local data=$(termux-telephony-deviceinfo)
+    local network=$(jq -r '.network_operator_name' <<< "$data")
+    local type=$(jq -r '.network_type' <<< "$data")
+    local roaming=$(jq -r '.network_roaming' <<< "$data")
+    local data_enabled=$(jq -r '.data_enabled' <<< "$data")
+    local connection=$(jq -r '.data_state' <<< "$data")
+    local signal=$(jq -r '.signal_strength' <<< "$data")
+    local sim=$(jq -r '.sim_operator_name' <<< "$data")
+    local country=$(jq -r '.sim_country_iso' <<< "$data")
+    local state=$(jq -r '.sim_state' <<< "$data")
+    local dualsim=$(jq -r '.phone_count' <<< "$data")
+    local phone=$(jq -r '.phone_type' <<< "$data")
+
+    if [[ $state == "absent" ]]; then
+        echo "Cellular Network Info Not Available.."
+        return 1
+    fi
+
+    dualsim=$( [[ $dualsim -eq 2 ]] && echo "Yes" || echo "No" )
+    roaming=$( [[ $roaming == "true" ]] && echo "Enabled" || echo "Disabled" )
+    data_enabled=$( [[ $data_enabled == "true" ]] && echo "Enabled" || echo "Disabled" )
+
+    PRINT $BOLD"
+     $UNDERLINE $MAGENTA Cellular Info: ${RESET} $BOLD
+     $CYAN Network Operator:   $WHITE $network
+     $CYAN Network Type:       $WHITE $type
+     $CYAN Roaming:            $WHITE $roaming
+     $CYAN Data Enabled:       $WHITE $data_enabled
+     $CYAN Data Connection:    $WHITE $connection
+     $CYAN Signal Strength:    $WHITE $signal
+     $CYAN SIM Operator:       $WHITE $sim
+     $CYAN SIM Country ISO:    $WHITE $country
+     $CYAN SIM State:          $WHITE $state
+     $CYAN Dual SIM Support:   $WHITE $dualsim
+     $CYAN Phone Network Type: $WHITE $phone"
+}
 
 #Network Information
 netstats () {
-    hostname=$(hostname)
-    PRINT $BOLD $CYAN "Host Name: $WHITE  $hostname"
-    externalip=$(curl -s ifconfig.me)
-    PRINT $BOLD $CYAN "External IP: $WHITE $externalip"
-    internalip=$(hostname -i)
-    PRINT $BOLD $CYAN "Internal IP: $WHITE $internalip"
-    if ping -q -c2 google.com &>/dev/null;
-    then
-        PRINT $BOLD $CYAN "Network Connection: $GREEN You are Up :)"
-
+    HOST_NAME=$(hostname)
+    EXTERNALIP=$(curl -4 ifconfig.me 2>/dev/null)
+    INTERNALIP=$(hostname -i)
+    local STATUS=$(
+    if ping -q -c2 google.com &>/dev/null; then
+        PRINT $BOLD $GREEN "You are Up :)"
     else
-        PRINT $BOLD $CYAN "Network Connection: $RED Your are Down :("
-    fi
+        PRINT $BOLD $RED "You are Down :("
+    fi)
+    PRINT $BOLD"
+     $UNDERLINE $MAGENTA Basic Info: ${RESET} $BOLD
+     $CYAN Host Name:         $WHITE $HOST_NAME
+     $CYAN External IP:       $WHITE $EXTERNALIP
+     $CYAN Internal IP:       $WHITE $INTERNALIP
+     $CYAN Connection Status: $WHITE $STATUS"
+    cellular_info
+    wifi_info
 }
 
 
