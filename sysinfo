@@ -280,20 +280,49 @@ battery() {
     fi
 }
 
-#Help Function while how to use the Argument
-#Based running the Script
+version() {
+    PRINT $BOLD"Android System Information
+     $WHITE Version: 2.0"
+}
+
+#Help Function
 _help() {
-    PRINT $BOLD $WHITE "Usage: Options.
-    --android|A - Shows Android System Overview.
-    --disk|D - Shows the disk Usage.
-    --cpu|C - CPU INFORMATION.
-    --mem|M - Shows the Memory usage.
-    --sysbinfo|s - Shows About Device Info.
-    --netstat|N - Shows About NetWork Stats.
-    --speed|S - Shows the Internet Speed.
-    --battery|B - Battery Stat of this device.
-    --help|h - Shows this Help Info."
-    PRINT $RED "***If Don't know how to do You can Directly run the Script without passing any Options***"
+    PRINT $WHITE"$BOLD
+Usage:$RESET <commands>.
+
+A tool for displaying Android System Information
+$BOLD
+Flags: $RESET
+     -h, --help    Show this help.
+     -v, --version Print the version number
+$BOLD
+Commands: $RESET
+     android    Display Android System Overview.
+     disk       Show disk usage.
+     cpu        View CPU Information.
+     memory     Display memory usage.
+     sysbinfo   Provide system information.
+     netstats   Show network statistics.
+     speed      Measure internet Speed.
+     battery    Display battery statistics.
+$BOLD
+Example: $RESET
+     sysinfo disk
+     "
+}
+
+netstat_help() {
+    PRINT $WHITE"$BOLD
+Usage:$RESET sysinfo netstats [<options> ].
+$BOLD
+Flags: $RESET
+     --wifi     - Show Wi-Fi connection Information if available.
+     --cellular - Show cellular connection Information if available.
+     --help     - Shows this Help.
+$BOLD
+Example: $RESET
+     sysinfo netstats --wifi
+     "
 }
 
 if [ $# -eq 0 ]; then
@@ -305,17 +334,43 @@ fi
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        A|--android) androidinfo;;
-        D|--disk) disk;;
-        C|--cpu) cpu;;
-        M|--mem) memusage;;
-        s|--sysbinfo) sysbaseinfo;;
-        N|--netstat) netstats;;
-        S|--speed) network_speed;;
-        B|--battery) battery;;
-        h|--help) _help ;;
-        *) PRINT $BOLD $YELLOW "Unknown Option: $1";
-            _help
+        -v|--version) version;;
+        android) androidinfo;;
+        disk) disk;;
+        cpu) cpu;;
+        memory) memusage;;
+        sysbinfo) sysbaseinfo;;
+        netstats)
+            case "$2$3" in
+                "--wifi--cellular" | "--cellular--wifi")
+                    wifi_info
+                    cellular_info
+                    ;;
+                "--wifi")
+                    wifi_info
+                    ;;
+                "--cellular")
+                    cellular_info
+                    ;;
+                "--help")
+                    netstat_help
+                    ;;
+                *)
+                    if [ -z "$2" ] && [ -z "$3" ]; then
+                        netstats
+                    else
+                        netstat_help
+
+                        PRINT $RED $BOLD"Error:$RESET Unknown Option '$2$3'"
+                    fi
+            esac
+            break
+            ;;
+        speed) network_speed;;
+        battery) battery;;
+        -h|--help) _help ;;
+        *) _help
+            PRINT $RED $BOLD"Error:$RESET Unknown Option '$1'"
             exit 1;;
     esac
     shift
