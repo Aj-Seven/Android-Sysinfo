@@ -87,26 +87,85 @@ function main() {
 
 #memory usage function
 memusage() {
-    local mem_info=$(free -m | awk '/Mem/ {print}')
-    local TOTAL_MEM=$(echo "$mem_info" | awk '{print $2}')
-    local AVAILABLE_MEM=$(echo "$mem_info" | awk '{print $7}')
-    local TOTAL_USED_MEM=$(( TOTAL_MEM - AVAILABLE_MEM ))
-    local BUFFCACHE_MEM=$(echo "$mem_info" | awk '{print $6}')
-    local FREE_BUFF_MEM=$(echo "$mem_info" | awk '{print $4}')
-    local PERCENT_USED_MEM=$(free -m | awk 'NR==2{printf "%.2f%%\n", $3*100/$2 }')
-    PRINT $BOLD $CYAN "Total Memory\t\t:$WHITE $TOTAL_MEM MB"
-    PRINT $BOLD $CYAN "Used Memory\t\t:$WHITE $TOTAL_USED_MEM MB"
-    PRINT $BOLD $CYAN "Available Memory\t:$WHITE $AVAILABLE_MEM MB"
-    PRINT $BOLD $CYAN "Buffer+Cache Memory\t:$WHITE $BUFFCACHE_MEM MB"
-    PRINT $BOLD $CYAN "Free Buff+Cache Memory\t:$WHITE $FREE_BUFF_MEM MB"
-    PRINT $BOLD $CYAN "Percentage Usage\t:$WHITE $PERCENT_USED_MEM"
+    get_memory_info() {
+        local mem_info=$(free -m | awk '/Mem/ {print}')
+        TOTAL_MEM=$(awk '{print $2}' <<< "$mem_info")
+        AVAILABLE_MEM=$(awk '{print $7}' <<< "$mem_info")
+        TOTAL_USED_MEM=$(( TOTAL_MEM - AVAILABLE_MEM ))
+        BUFFCACHE_MEM=$(awk '{print $6}' <<< "$mem_info")
+        FREE_BUFF_MEM=$(awk '{print $4}' <<< "$mem_info")
+        PERCENT_USED_MEM=$(awk 'NR==2{printf "%.2f%%", $3*100/$2 }' <<< "$(free -m)")
+    }
+
+    print_memory_details() {
+    PRINT $BOLD"
+     $CYAN Total Memory:           $WHITE $TOTAL_MEM MB
+     $CYAN Used Memory:            $WHITE $TOTAL_USED_MEM MB
+     $CYAN Available Memory:       $WHITE $AVAILABLE_MEM MB
+     $CYAN Buffer+Cache Memory:    $WHITE $BUFFCACHE_MEM MB
+     $CYAN Free Buff+Cache Memory: $WHITE $FREE_BUFF_MEM MB
+     $CYAN Percentage Usage:       $WHITE $PERCENT_USED_MEM"
+}
+    get_memory_info
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Memory Details:$RESET"
+        print_memory_details
+    PRINT "
+$YELLOW$BOLD INFO:$RESET Press 'l' for Live Monitoring...
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit or return to main menu."
+        read -n 1 key
+        if [[ $key = "l" ]]; then
+                clear
+                while true; do
+                    tput cup 0
+                    tput el
+                    get_memory_info
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Memory Live Monitoring:$RESET"
+                    print_memory_details
+    PRINT "
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit or return to main menu..."
+                    sleep 1
+                    read -n 1 -s -t 1 && break
+                done
+        fi
 }
 
 #CPU Information
 cpu() {
     command cpufetch --color 239,90,45:210,200,200:0,0,0:100,200,45:0,200,200
-    cpu_usage=$(ps aux | awk 'BEGIN {sum=0} {sum+=$3}; END {printf "%.2f%%\n",sum}')
-    PRINT $BOLD $RED "CPU Load: "$cpu_usage
+
+    get_cpu_info() {
+        cpu_usage=$(ps aux | awk 'BEGIN {sum=0} {sum+=$3}; END {printf "%.2f%%\n",sum}')
+    }
+
+    print_cpu_details() {
+    PRINT $BOLD"
+     $CYAN CPU Load: $WHITE $cpu_usage"
+    }
+        get_cpu_info
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA CPU Details:$RESET"
+        print_cpu_details
+    PRINT "
+$YELLOW$BOLD INFO:$RESET Press 'l' for Live Monitoring...
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit or return to main menu."
+        read -n 1 key
+        if [[ $key = "l" ]]; then
+            clear
+            while true; do
+                tput cup 0
+                tput el
+                get_cpu_info
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA CPU Live Monitoring:$RESET"
+                print_cpu_details
+    PRINT "
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit or return to main menu..."
+                sleep 1
+                read -n 1 -s -t 1 && break
+        done
+    fi
 }
 
 #Disk Usage
@@ -120,6 +179,7 @@ disk() {
 #info about android software
 androidinfo() {
     PRINT $BOLD"
+$UNDERLINE$MAGENTA Android Software Info: $RESET$BOLD
      $CYAN Brand:           $WHITE $(getprop ro.product.brand)
      $CYAN Manufacturer:    $WHITE $(getprop ro.product.manufacturer)
      $CYAN Device Model:    $WHITE $(getprop ro.product.model)
@@ -151,7 +211,7 @@ wifi_info() {
     hidden_state=$( [[ "$hidden_state" == "true" ]] && echo "Yes" || echo "No" )
 
     PRINT $BOLD"
-     $UNDERLINE $MAGENTA WiFi Info: ${RESET} $BOLD
+$UNDERLINE $MAGENTA WiFi Info: $RESET$BOLD
      $CYAN WiFi Name:    $WHITE $name
      $CYAN Hidden State: $WHITE $hidden_state
      $CYAN Frequency:    $WHITE $freq MHz
@@ -185,7 +245,7 @@ cellular_info() {
     data_enabled=$( [[ $data_enabled == "true" ]] && echo "Enabled" || echo "Disabled" )
 
     PRINT $BOLD"
-     $UNDERLINE $MAGENTA Cellular Info: ${RESET} $BOLD
+$UNDERLINE$MAGENTA Cellular Info: $RESET$BOLD
      $CYAN Network Operator:   $WHITE $network
      $CYAN Network Type:       $WHITE $type
      $CYAN Roaming:            $WHITE $roaming
@@ -211,7 +271,7 @@ netstats () {
         PRINT $BOLD $RED "You are Down :("
     fi)
     PRINT $BOLD"
-     $UNDERLINE $MAGENTA Basic Info: ${RESET} $BOLD
+$UNDERLINE$MAGENTA Network Basic Info: $RESET$BOLD
      $CYAN Host Name:         $WHITE $HOST_NAME
      $CYAN External IP:       $WHITE $EXTERNALIP
      $CYAN Internal IP:       $WHITE $INTERNALIP
@@ -242,7 +302,8 @@ sysbaseinfo() {
 
 #Network Speed Checker
 network_speed() {
-    PRINT $UNDERLINE $YELLOW "Running SpeedTest, Please Wait..."
+    PRINT "
+$UNDERLINE$YELLOW Running SpeedTest, Please Wait..."
     tmpfile=$(mktemp)
     speedtest-go | grep -E "Download|Upload|Latency" > "$tmpfile" & 2>/dev/null
 
@@ -257,6 +318,7 @@ network_speed() {
     latency=$(grep -oP "Latency:\s+\K[0-9.]+" "$tmpfile")
 
     PRINT $BOLD"
+$UNDERLINE$MAGENTA Internet Speed Data: $RESET$BOLD
      $CYAN Download speed: $WHITE $download Mbps
      $CYAN Upload speed:   $WHITE $upload Mbps
      $CYAN Latency:        $WHITE $latency ms"
@@ -265,20 +327,49 @@ network_speed() {
 }
 
 battery() {
-    termux-battery-status | jtbl -r | awk '{ print "\033[0;95m" $1 "\033[0;0m" "\n\t" "\033[0;96m" $2 "\033[0;0m" }'
-    PRINT $YELLOW "Press 'l' for live battery test"
-    PRINT $YELLOW "Press 'q' or 'ctrl+c' to quit"
-    read -N 1 key
-    if [[ $key = "l" ]]; then
-        while true; do
-            termux-battery-status | jtbl -r | awk '{ print "\033[0;95m" $1 "\033[0;0m" "\n\t" "\033[0;96m" $2 "\033[0;0m" }'
-    read -N 1 -t 0.50 key
-    if [[ $key = "q" ]] || [[ $key = "ctrl+c" ]]; then
-        exit
-    fi
-        done
-    fi
+    get_batt_info() {
+    local data=$(termux-battery-status)
+    health=$(jq -r '.health' <<< "$data")
+    percentage=$(jq -r '.percentage' <<< "$data")
+    plugged=$(jq -r '.plugged' <<< "$data")
+    charging=$(jq -r '.status' <<< "$data")
+    temp=$(jq -r '.temperature' <<< "$data")
+    current=$(jq -r '.current' <<< "$data")
 }
+    print_batt_details() {
+    PRINT $BOLD"
+     $CYAN Percentage:  $WHITE $percentage%
+     $CYAN Health:      $WHITE $health
+     $CYAN Current:     $WHITE $current
+     $CYAN Temperature: $WHITE $temp
+     $CYAN Plugged:     $WHITE $plugged
+     $CYAN Charging:    $WHITE $charging"
+    }
+        get_batt_info
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Battery Statistics:$RESET"
+        print_batt_details
+    PRINT "
+$YELLOW$BOLD INFO:$RESET Press 'l' for Live Monitoring...
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit or return to main menu..."
+        read -n 1 key
+        if [[ $key = "l" ]]; then
+            clear
+            while true; do
+                tput cup 0
+                tput el
+                get_batt_info
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Battery Live Monitoring:$RESET"
+                print_batt_details
+    PRINT "
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit or return to main menu..."
+                read -n 1 -s -t 1 && break;
+            done
+    fi
+
+}
+
 
 version() {
     PRINT $BOLD"Android System Information
