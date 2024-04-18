@@ -15,6 +15,26 @@ BOLD=$(tput bold)
 UNDERLINE=$(tput smul)
 NO_UNDERLINE=$(tput rmul)
 
+#Function to check whether ADB remote tcp is open or not.
+check_adb_port() {
+    local state=$(nmap -p 5555 127.0.0.1)
+    if echo "$state" | grep -q "open"; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+#Function to connect ADB to the device
+connect_adb() {
+    adb connect 127.0.0.1:5555 > /dev/null 2>&1
+}
+
+#Function to run adb shell command within localhost port to avoid conflicts
+run-shell() {
+    adb -s 127.0.0.1:5555 shell "$@"
+}
+
 #function to print texts
 PRINT() {
     local style=$1
@@ -85,7 +105,6 @@ function main() {
     esac
 }
 
-#memory usage function
 memusage() {
     get_memory_info() {
         local mem_info=$(free -m | awk '/Mem/ {print}')
@@ -112,7 +131,7 @@ $UNDERLINE$MAGENTA Memory Details:$RESET"
         print_memory_details
     PRINT "
 $YELLOW$BOLD INFO:$RESET Press 'l' for Live Monitoring...
-$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit or return to main menu."
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
         read -n 1 key
         if [[ $key = "l" ]]; then
                 clear
@@ -124,7 +143,7 @@ $YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit or return to main menu
 $UNDERLINE$MAGENTA Memory Live Monitoring:$RESET"
                     print_memory_details
     PRINT "
-$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit or return to main menu..."
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
                     sleep 1
                     read -n 1 -s -t 1 && break
                 done
@@ -133,35 +152,165 @@ $YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit or return to main menu
 
 #CPU Information
 cpu() {
-    command cpufetch --color 239,90,45:210,200,200:0,0,0:100,200,45:0,200,200
 
-    get_cpu_info() {
-        cpu_usage=$(ps aux | awk 'BEGIN {sum=0} {sum+=$3}; END {printf "%.2f%%\n",sum}')
-    }
+cpu_info() {
+    data=$(lscpu)
+    name=$(echo "$data" | grep "Vendor ID" | awk '{print $3}')
+    model=$(getprop ro.soc.model)
+    arch=$(echo "$data" | grep "Architecture" | awk '{print $2}')
+    cores=$(grep -c "^processor" /proc/cpuinfo)
+    governor=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
+    order=$(echo "$data" | awk '/Byte Order/ {for (i=3; i<=NF; i++) printf "%s ", $i}')
+    op_modes=$(echo "$data" | awk '/CPU op-mode\(s\)/ {print $(NF-1), $NF}')
+    features=$(awk '/Features/ && !flag {sub(/^[[:space:]]*Features[[:space:]]*:[[:space:]]*/, ""); print; flag=1}' /proc/cpuinfo)
 
-    print_cpu_details() {
+    model_names=$(lscpu | awk '/Model name/ {for (i=3; i<=NF; i++) printf "%s ", $i}')
+
+    min_max_values=$(lscpu | awk '/CPU (min|max) MHz:/ {print $NF}')
+
+    scaling_percentages=$(lscpu | grep -oP 'CPU\(s\) scaling MHz:\s+\K\d+%')
+
+    vulnerabilities=$(echo "$data" | grep -E "Vulnerability|bugs" | awk '/Vulnerability/ {gsub("Vulnerability ", ""); print $0}')
+
+    # Number of CPUs
+    num_cpus=$(echo "$model_names" | wc -l)
+
+    PRINT "$BOLD
+     $CYAN Name:           $WHITE $name
+     $CYAN Model:          $WHITE $model
+     $CYAN Architecture:   $WHITE $arch
+     $CYAN Operation Mode: $WHITE $op_modes
+     $CYAN No. of Cores:   $WHITE $cores
+     $CYAN Governor:       $WHITE $governor
+     $CYAN Order:          $WHITE $order
+     $CYAN Model name:     $WHITE $(echo "$model_names" | awk NR==1)
+     $CYAN Min MHz:        $WHITE $(echo "$min_max_values" | awk NR==2)    $(echo "$min_max_values" | awk NR==4)
+     $CYAN Max MHz:        $WHITE $(echo "$min_max_values" | awk NR==1)   $(echo "$min_max_values" | awk NR==3)
+     $CYAN Max Scaling:    $WHITE $(echo "$scaling_percentages" | awk NR==1)        $(echo "$scaling_percentages" | awk NR==2)
+     $CYAN Features:       $WHITE $features
+     $UNDERLINE$RED Vulnerabilities:$RESET$BOLD
+$WHITE$vulnerabilities"
+
+}
+
+#default state of getting cpu load
+    cpu_load_without_adb() {
+        local cpu_usage=$(ps aux | awk 'BEGIN {sum=0} {sum+=$3}; END {printf "%.2f%%\n",sum}')
     PRINT $BOLD"
-     $CYAN CPU Load: $WHITE $cpu_usage"
-    }
-        get_cpu_info
+     $CYAN CPU Load(within Termux): $WHITE $cpu_usage"
+}
+
+#Function to read CPU stats from /proc/stat
+    read_cpu_stats() {
+        read cpu user nice system idle iowait irq softirq steal guest guest_nice <<< $(run-shell grep '^cpu ' /proc/stat)
+}
+
+#get CPU frequency
+read_cpu_mhz() {
+    local core_number=-1
+    local cores=()
+    local freqs=()
+
+    #loop through each CPU core.
+    for file in /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq; do
+
+        #get CPU core number.
+        ((core_number++))
+
+        #store it in array.
+        cores+=("$core_number")
+
+        #extract frequency values in KHz.
+        freq_khz=$(cat "$file")
+
+        # Convert kHz to MHz
+        freq_mhz=$(echo "scale=2; $freq_khz / 1000" | bc)
+        freqs+=("$freq_mhz")
+    done
+
+    for ((i=0; i<${#cores[@]}; i++)); do
+    PRINT $BOLD"
+     $CYAN CPU core ${cores[i]}:$WHITE ${freqs[i]} MHz"
+    done
+}
+
+#Function to calculate CPU usage percentage
+    calculate_cpu_usage() {
+        local prev_idle=$1
+        local prev_total=$2
+        local idle=$3
+        local total=$4
+
+        local idle_delta=$((idle - prev_idle))
+        local total_delta=$((total - prev_total))
+
+        # Avoid division by zero
+        if [[ $total_delta -eq 0 ]]; then
+            echo "0.00"
+            return
+        fi
+
+        local cpu_usage=$(bc -l <<< "scale=2; (1 - ($idle_delta /$total_delta)) * 100")
+        echo $cpu_usage
+}
+
+# Initial readings
+read_cpu_stats
+prev_idle=$idle
+prev_total=$((user + nice + system + idle + iowait + irq + softirq + steal))
+
+#fetch cpu load by adb
+    cpu_load_with_adb() {
+        read_cpu_stats
+        local cpu_usage=$(calculate_cpu_usage $prev_idle $prev_total $idle $((user + nice + system + idle + iowait + irq + softirq + steal)))
+        # Update previous values
+        prev_idle=$idle
+        prev_total=$((user + nice + system + idle + iowait + irq + softirq + steal))
+    PRINT $BOLD"
+     $CYAN Overall System Load:$WHITE $cpu_usage%"
+}
+
+#check status to run function by adb or without adb
+    check_status() {
+        if check_adb_port; then
+            connect_adb
+            cpu_load_with_adb
+        else
+    PRINT $BOLD"
+$YELLOW$BOLD INFO:$RESET Fetching CPU load via 'ps'"
+        cpu_load_without_adb
+    fi
+}
+
     PRINT $BOLD"
 $UNDERLINE$MAGENTA CPU Details:$RESET"
-        print_cpu_details
+        cpu_info
+       PRINT $BOLD"
+$UNDERLINE$MAGENTA CPU Load:$RESET"
+        check_status
     PRINT "
 $YELLOW$BOLD INFO:$RESET Press 'l' for Live Monitoring...
-$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit or return to main menu."
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
         read -n 1 key
         if [[ $key = "l" ]]; then
             clear
             while true; do
                 tput cup 0
                 tput el
-                get_cpu_info
     PRINT $BOLD"
-$UNDERLINE$MAGENTA CPU Live Monitoring:$RESET"
-                print_cpu_details
+$UNDERLINE$MAGENTA CPU Load Live Monitoring:$RESET"
+    PRINT $BOLD"
+     $CYAN Model name: $WHITE $(echo "$model_names" | awk NR==1)
+     $CYAN Min MHz:    $WHITE $(echo "$min_max_values" | awk NR==2)    $(echo "$min_max_values" | awk NR==4)
+     $CYAN Max MHz:    $WHITE $(echo "$min_max_values" | awk NR==1)   $(echo "$min_max_values" | awk NR==3)"
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA CPU Cores:$RESET"
+                read_cpu_mhz
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA CPU Load:$RESET"
+                check_status
     PRINT "
-$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit or return to main menu..."
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
                 sleep 1
                 read -n 1 -s -t 1 && break
         done
@@ -351,7 +500,7 @@ $UNDERLINE$MAGENTA Battery Statistics:$RESET"
         print_batt_details
     PRINT "
 $YELLOW$BOLD INFO:$RESET Press 'l' for Live Monitoring...
-$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit or return to main menu..."
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
         read -n 1 key
         if [[ $key = "l" ]]; then
             clear
@@ -363,7 +512,7 @@ $YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit or return to main menu
 $UNDERLINE$MAGENTA Battery Live Monitoring:$RESET"
                 print_batt_details
     PRINT "
-$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit or return to main menu..."
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
                 read -n 1 -s -t 1 && break;
             done
     fi
