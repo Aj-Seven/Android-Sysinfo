@@ -27,12 +27,12 @@ check_adb_port() {
 
 #Function to connect ADB to the device
 connect_adb() {
-    adb connect 127.0.0.1:5555 > /dev/null 2>&1
+    adb connect 127.0.0.1:5555 >/dev/null 2>&1
 }
 
 #Function to run adb shell command within localhost port to avoid conflicts
 run-shell() {
-    adb -s 127.0.0.1:5555 shell "$@"
+    adb -s 127.0.0.1:5555 shell "$@" >/dev/null 2>&1
 }
 
 #function to print texts
@@ -172,6 +172,8 @@ cpu_info() {
 
     vulnerabilities=$(echo "$data" | grep -E "Vulnerability|bugs" | awk '/Vulnerability/ {gsub("Vulnerability ", ""); print $0}')
 
+    abi=$(getprop ro.product.cpu.abi)
+    s_abi=$(getprop ro.product.cpu.abilist)
     # Number of CPUs
     num_cpus=$(echo "$model_names" | wc -l)
 
@@ -182,11 +184,13 @@ cpu_info() {
      $CYAN Operation Mode: $WHITE $op_modes
      $CYAN No. of Cores:   $WHITE $cores
      $CYAN Governor:       $WHITE $governor
-     $CYAN Order:          $WHITE $order
+     $CYAN ABI:            $WHITE $abi
+     $CYAN Supported ABIs: $WHITE $s_abi
+     $CYAN Byte Order:     $WHITE $order
      $CYAN Model name:     $WHITE $(echo "$model_names" | awk NR==1)
      $CYAN Min MHz:        $WHITE $(echo "$min_max_values" | awk NR==2)    $(echo "$min_max_values" | awk NR==4)
      $CYAN Max MHz:        $WHITE $(echo "$min_max_values" | awk NR==1)   $(echo "$min_max_values" | awk NR==3)
-     $CYAN Max Scaling:    $WHITE $(echo "$scaling_percentages" | awk NR==1)        $(echo "$scaling_percentages" | awk NR==2)
+     $CYAN Max Scaling:    $WHITE $(echo "$scaling_percentages" | awk NR==1)            $(echo "$scaling_percentages" | awk NR==2)
      $CYAN Features:       $WHITE $features
      $UNDERLINE$RED Vulnerabilities:$RESET$BOLD
 $WHITE$vulnerabilities"
@@ -328,16 +332,18 @@ disk() {
 #info about android software
 androidinfo() {
     PRINT $BOLD"
-$UNDERLINE$MAGENTA Android Software Info: $RESET$BOLD
+$UNDERLINE$MAGENTA Android Software Info:$RESET$BOLD
      $CYAN Brand:           $WHITE $(getprop ro.product.brand)
      $CYAN Manufacturer:    $WHITE $(getprop ro.product.manufacturer)
      $CYAN Device Model:    $WHITE $(getprop ro.product.model)
+     $CYAN Device UI:       $WHITE $(getprop ro.product.brand.ui)
      $CYAN Android Version: $WHITE $(getprop ro.build.version.release)
      $CYAN SDK Version:     $WHITE $(getprop ro.build.version.sdk)
      $CYAN Build Number:    $WHITE $(getprop ro.build.display.id)
      $CYAN Build Date:      $WHITE $(date -d @$(getprop ro.build.date.utc))
      $CYAN Baseband:        $WHITE $(getprop gsm.version.baseband)
      $CYAN Build Type:      $WHITE $(getprop ro.build.type)
+     $CYAN Build ID:        $WHITE $(getprop ro.product.build.id)
      $CYAN Language:        $WHITE $(getprop persist.sys.locale)
      $CYAN Timezone:        $WHITE $(getprop persist.sys.timezone)"
 }
@@ -354,13 +360,13 @@ wifi_info() {
     local max_speed=$(jq -r '.link_speed_mbps' <<< "$data")
 
     if [[ $status != "COMPLETED" ]]; then
-        PRINT $YELLOW "WiFi information not available."
+    PRINT $YELLOW "WiFi information not available."
         return 1
     fi
     hidden_state=$( [[ "$hidden_state" == "true" ]] && echo "Yes" || echo "No" )
 
     PRINT $BOLD"
-$UNDERLINE $MAGENTA WiFi Info: $RESET$BOLD
+$UNDERLINE $MAGENTA WiFi Info:$RESET$BOLD
      $CYAN WiFi Name:    $WHITE $name
      $CYAN Hidden State: $WHITE $hidden_state
      $CYAN Frequency:    $WHITE $freq MHz
@@ -394,7 +400,7 @@ cellular_info() {
     data_enabled=$( [[ $data_enabled == "true" ]] && echo "Enabled" || echo "Disabled" )
 
     PRINT $BOLD"
-$UNDERLINE$MAGENTA Cellular Info: $RESET$BOLD
+$UNDERLINE$MAGENTA Cellular Info:$RESET$BOLD
      $CYAN Network Operator:   $WHITE $network
      $CYAN Network Type:       $WHITE $type
      $CYAN Roaming:            $WHITE $roaming
@@ -420,7 +426,7 @@ netstats () {
         PRINT $BOLD $RED "You are Down :("
     fi)
     PRINT $BOLD"
-$UNDERLINE$MAGENTA Network Basic Info: $RESET$BOLD
+$UNDERLINE$MAGENTA Network Basic Info:$RESET$BOLD
      $CYAN Host Name:         $WHITE $HOST_NAME
      $CYAN External IP:       $WHITE $EXTERNALIP
      $CYAN Internal IP:       $WHITE $INTERNALIP
@@ -439,13 +445,15 @@ sysbaseinfo() {
     ko=$(uname -o)
     uptime=$(uptime -p)
     suptime=$(uptime -s)
-    PRINT $BOLD $CYAN "Operating System: $WHITE  $ko"
-    PRINT $BOLD $CYAN "Kernel Name: $WHITE       $kn"
-    PRINT $BOLD $CYAN "Kernel Version: $WHITE    $kr"
-    PRINT $BOLD $CYAN "Kernel Release: $WHITE    $kv"
-    PRINT $BOLD $CYAN "System Architect: $WHITE  $ka"
-    PRINT $BOLD $CYAN "System Uptime: $WHITE     $uptime"
-    PRINT $BOLD $CYAN "System Since Boot: $WHITE $suptime"
+    PRINT "
+$UNDERLINE$MAGENTA Android Base Info:$RESET$BOLD
+     $CYAN Operating System:  $WHITE $ko
+     $CYAN Kernel Name:       $WHITE $kn
+     $CYAN Kernel Version:    $WHITE $kr
+     $CYAN Kernel Release:    $WHITE $kv
+     $CYAN System Architect:  $WHITE $ka
+     $CYAN System Uptime:     $WHITE $uptime
+     $CYAN System Since Boot: $WHITE $suptime"
 }
 
 
@@ -467,7 +475,7 @@ $UNDERLINE$YELLOW Running SpeedTest, Please Wait..."
     latency=$(grep -oP "Latency:\s+\K[0-9.]+" "$tmpfile")
 
     PRINT $BOLD"
-$UNDERLINE$MAGENTA Internet Speed Data: $RESET$BOLD
+$UNDERLINE$MAGENTA Internet Speed Data:$RESET$BOLD
      $CYAN Download speed: $WHITE $download Mbps
      $CYAN Upload speed:   $WHITE $upload Mbps
      $CYAN Latency:        $WHITE $latency ms"
@@ -532,11 +540,11 @@ Usage:$RESET <commands>.
 
 A tool for displaying Android System Information
 $BOLD
-Flags: $RESET
+Flags:$RESET
      -h, --help    Show this help.
      -v, --version Print the version number
 $BOLD
-Commands: $RESET
+Commands:$RESET
      android    Display Android System Overview.
      disk       Show disk usage.
      cpu        View CPU Information.
@@ -546,7 +554,7 @@ Commands: $RESET
      speed      Measure internet Speed.
      battery    Display battery statistics.
 $BOLD
-Example: $RESET
+Example:$RESET
      sysinfo disk
      "
 }
@@ -555,12 +563,12 @@ netstat_help() {
     PRINT $WHITE"$BOLD
 Usage:$RESET sysinfo netstats [<options> ].
 $BOLD
-Flags: $RESET
+Flags:$RESET
      --wifi     - Show Wi-Fi connection Information if available.
      --cellular - Show cellular connection Information if available.
      --help     - Shows this Help.
 $BOLD
-Example: $RESET
+Example:$RESET
      sysinfo netstats --wifi
      "
 }
