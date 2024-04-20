@@ -62,50 +62,8 @@ spinner() {
     printf "   \b\b\b"
 }
 
-
-#main function
-function main() {
-    echo -e ${BOLD} ${BLUE}
-    figlet -t -c -f term "SYSTEM INFORMATION"
-    echo -e ${RESET}
-    echo -e ${BOLD} ${YELLOW}
-    figlet -c -t -f term "Github: https://github.com/Aj-Seven"
-    echo -e ${RESET}
-    echo -e ${BOLD} ${CYAN}
-    figlet -t -c -f digital "Author: @Aj-Seven"
-    echo -e ${RESET}
-    PRINT $UNDERLINE "Select the options below:"
-    PRINT $BOLD $WHITE"
-        01) System Overview
-        02) Disk Fetch
-        03) CPU Info
-        04) Memory Fetch
-        05) System BaseInfo
-        06) Network Stats
-        07) Internet Speed
-        08) Battery Stats
-        00) Exit\n"
-    read -n1 opt
-    case $opt in
-        1) androidinfo ;;
-        2) disk ;;
-        3) cpu ;;
-        4) memusage ;;
-        5) sysbaseinfo ;;
-        6) netstats ;;
-        7) network_speed ;;
-        8) battery;;
-        0)  PRINT $RED "Exiting...:)"
-            sleep 0.6s;
-            exit 0;
-            ;;
-        *)
-            PRINT $CYAN "Error Selection. Try Again..."
-            ;;
-    esac
-}
-
 memusage() {
+    clear
     get_memory_info() {
         local mem_info=$(free -m | awk '/Mem/ {print}')
         TOTAL_MEM=$(awk '{print $2}' <<< "$mem_info")
@@ -152,7 +110,7 @@ $YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
 
 #CPU Information
 cpu() {
-
+    clear
 cpu_info() {
     data=$(lscpu)
     name=$(echo "$data" | grep "Vendor ID" | awk '{print $3}')
@@ -323,14 +281,18 @@ $YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
 
 #Disk Usage
 disk() {
+    clear
     echo -e ${BOLD} ${BLUE}
     df -h | awk '$NF=="/storage/emulated"{printf "Disk Usage: %d/%dGB (%s)\n", $3,$2,$5}'
     echo -e ${RESET}
-
+    PRINT "$BOLD
+$YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
+    read -r
 }
 
 #info about android software
 androidinfo() {
+    clear
     PRINT $BOLD"
 $UNDERLINE$MAGENTA Android Software Info:$RESET$BOLD
      $CYAN Brand:           $WHITE $(getprop ro.product.brand)
@@ -346,6 +308,9 @@ $UNDERLINE$MAGENTA Android Software Info:$RESET$BOLD
      $CYAN Build ID:        $WHITE $(getprop ro.product.build.id)
      $CYAN Language:        $WHITE $(getprop persist.sys.locale)
      $CYAN Timezone:        $WHITE $(getprop persist.sys.timezone)"
+     PRINT "$BOLD
+$YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
+    read -r
 }
 
 #wifi info
@@ -416,6 +381,7 @@ $UNDERLINE$MAGENTA Cellular Info:$RESET$BOLD
 
 #Network Information
 netstats () {
+    clear
     HOST_NAME=$(hostname)
     EXTERNALIP=$(curl -4 ifconfig.me 2>/dev/null)
     INTERNALIP=$(hostname -i)
@@ -433,11 +399,15 @@ $UNDERLINE$MAGENTA Network Basic Info:$RESET$BOLD
      $CYAN Connection Status: $WHITE $STATUS"
     cellular_info
     wifi_info
+     PRINT "$BOLD
+$YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
+    read -r
 }
 
 
 #System Base Information like kernel uptime
 sysbaseinfo() {
+    clear
     kn=$(uname -s)
     kv=$(uname -v)
     kr=$(uname -r)
@@ -445,7 +415,7 @@ sysbaseinfo() {
     ko=$(uname -o)
     uptime=$(uptime -p)
     suptime=$(uptime -s)
-    PRINT "
+    PRINT $BOLD"
 $UNDERLINE$MAGENTA Android Base Info:$RESET$BOLD
      $CYAN Operating System:  $WHITE $ko
      $CYAN Kernel Name:       $WHITE $kn
@@ -454,11 +424,15 @@ $UNDERLINE$MAGENTA Android Base Info:$RESET$BOLD
      $CYAN System Architect:  $WHITE $ka
      $CYAN System Uptime:     $WHITE $uptime
      $CYAN System Since Boot: $WHITE $suptime"
+     PRINT "$BOLD
+$YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
+    read -r
 }
 
 
 #Network Speed Checker
 network_speed() {
+    clear
     PRINT "
 $UNDERLINE$YELLOW Running SpeedTest, Please Wait..."
     tmpfile=$(mktemp)
@@ -481,9 +455,13 @@ $UNDERLINE$MAGENTA Internet Speed Data:$RESET$BOLD
      $CYAN Latency:        $WHITE $latency ms"
 
     rm "$tmpfile"
+    PRINT "$BOLD
+$YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
+    read -r
 }
 
 battery() {
+    clear
     get_batt_info() {
     local data=$(termux-battery-status)
     health=$(jq -r '.health' <<< "$data")
@@ -524,7 +502,6 @@ $YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
                 read -n 1 -s -t 1 && break;
             done
     fi
-
 }
 
 
@@ -571,6 +548,48 @@ $BOLD
 Example:$RESET
      sysinfo netstats --wifi
      "
+}
+
+display_menu() {
+    PRINT "
+$BOLD$BLUE $(figlet -c -t -f term "SYSTEM INFORMATION v2.0")
+
+$BOLD$YELLOW $(figlet -c -t -f term "Github: https://github.com/Aj-Seven/Android-Sysinfo")
+
+$BOLD$CYAN $(figlet -c -t -f digital "Author: @Aj-Seven")
+$UNDERLINE Select the options below:$RESET$BOLD$WHITE
+        01) Android Info
+        02) Disk Fetch
+        03) CPU Info
+        04) Memory Fetch
+        05) System BaseInfo
+        06) Network Stats
+        07) Internet Speed
+        08) Battery Stats
+        00) Quit\n"
+}
+
+main() {
+    clear
+    display_menu
+    read -n1 opt
+    case $opt in
+        1) androidinfo ;;
+        2) disk ;;
+        3) cpu ;;
+        4) memusage ;;
+        5) sysbaseinfo ;;
+        6) netstats ;;
+        7) network_speed ;;
+        8) battery;;
+        0)  PRINT $RED "Exiting...:)"
+            sleep 0.5s;
+            exit 0;
+            ;;
+        *)
+            PRINT $CYAN "Error Selection. Try Again..."
+            ;;
+    esac
 }
 
 if [ $# -eq 0 ]; then
