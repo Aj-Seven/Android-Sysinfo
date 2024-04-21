@@ -44,7 +44,7 @@ install_script() {
 
     # Clone the repository directory
     echo -e "$cyan Cloning repository directory... $off"
-    git clone -b test "$REPO_URL" "$REPO_DIR" > /dev/null 2>&1
+    git clone "$REPO_URL" "$REPO_DIR" > /dev/null 2>&1
     #link script to bin directory
     echo -e "$yellow Creating symbolic link to the script in the bin directory... $off"
     ln -s "$REPO_DIR/$SCRIPT_NAME" "$SCRIPT_PATH"
