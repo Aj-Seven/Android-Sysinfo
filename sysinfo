@@ -1,123 +1,500 @@
 #!/data/data/com.termux/files/usr/bin/bash
-#Regular Color Variables
-c_off='\033[0m' #No Color
-black='\033[0;30m' #Black
-red='\033[1;91m' #Red
-green='\033[1;92m' #Green
-yellow='\033[0;93m' #Yellow
-blue='\033[0;94m' #Blue
-purple='\033[0;95m' #Purple
-cyan='\033[0;96m' #Cyan
-white='\033[0;97m' #White
-#BackGround Colors Variables
-b_black='\033[40m'
-b_red='\033[41m'
-b_green='\033[42m'
 
-#main function
-function main() {
-    echo -e "$blue"
-    figlet -t -c -f term SYSTEM INFORMATION
-    echo -e "$c_off"
-    echo -e "$purple"
-    figlet -c -t -f term "Github: https://github.com/Aj-Seven"
-    echo -e "$c_off"
-    echo -e "$yellow"
-    figlet -t -c -f digital "Author: @Aj-Seven"
-    echo -e "$c_off"
-    echo -e "$white"
-    echo -e $b_black
-    echo -e "Select the options below:"
-    echo -e "01) OS Info"
-    echo -e "02) Disk Fetch"
-    echo -e "03) CPU Info"
-    echo -e "04) Memory Fetch"
-    echo -e "05) System BaseInfo"
-    echo -e "06) Network Stats"
-    echo -e "07) Internet Speed"
-    echo -e "08) Battery Stats"
-    echo -e "00) Exit"
-    echo -e "$c_off"
-    read -n1 opt
-    case $opt in
-        1) OS ;;
-        2) disk ;;
-        3) cpu ;;
-        4) memusage ;;
-        5) sysbaseinfo ;;
-        6) netstats ;;
-        7) ispeed ;;
-        8) battery;;
-        0)  echo -e $red "Exiting...:)$c_off"
-            sleep 0.6s;
-            exit 0;
-            ;;
-        *)
-            echo -e "$cyan Error Selection...Try Again... $c_off"
-            ;;
-    esac
+#color codes
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+YELLOW=$(tput setaf 3)
+BLUE=$(tput setaf 4)
+MAGENTA=$(tput setaf 5)
+CYAN=$(tput setaf 6)
+WHITE=$(tput setaf 7)
+RESET=$(tput sgr0)
+
+#text formatting
+BOLD=$(tput bold)
+UNDERLINE=$(tput smul)
+NO_UNDERLINE=$(tput rmul)
+
+#store repo info
+REPO_DIR="$PREFIX/share/Android-Sysinfo"
+SCRIPT_NAME="sysinfo"
+REPO_URL="https://github.com/Aj-Seven/Android-Sysinfo"
+BIN_DIR="$PREFIX/bin"
+
+# Global variable to store update status
+UPDATE_STATUS=""
+
+# Function to update the repository
+update_repo() {
+    cd "$REPO_DIR" || exit 1
+
+    # Run git pull origin and parse the output to show only relevant lines
+   if output=$(git pull origin $(git rev-parse --abbrev-ref HEAD) 2>&1); then
+        if echo "$output" | grep -q 'Already up to date'; then
+            echo "up-to-date"
+        elif echo "$output" | grep -q 'Updating'; then
+            echo "updated"
+    PRINT "
+$BOLD$YELLOW Updated the script, start it again to apply changes..."
+            exit 0
+        else
+            echo "Failed"
+        fi
+    fi
 }
 
-#memory usage function
+# Function to check for updates in the repository
+monitor_update() {
+    # Check if the repository folder exists
+    if [ ! -d "$REPO_DIR" ]; then
+        git clone "$REPO_URL" "$REPO_DIR" > /dev/null 2>&1 || { UPDATE_STATUS="failed"; return; }
+    fi
+
+    # Fetch updates forcefully
+    cd "$REPO_DIR" || { UPDATE_STATUS="failed"; return; }
+    git fetch --force origin > /dev/null 2>&1
+
+    # Get the current branch
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+    # Check if the local branch is behind the remote branch
+    if [ $(git rev-list HEAD...origin/$current_branch --count) -gt 0 ]; then
+        echo "available"
+    else
+        echo "up-to-date"
+    fi 
+}
+UPDATE_STATUS=$(monitor_update)
+
+#check update function for menu selection
+check_update() {
+    clear
+    cd "$REPO_DIR" || { UPDATE_STATUS="failed"; return; }
+    git fetch --force origin > /dev/null 2>&1
+
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+    if [ $(git rev-list HEAD...origin/$current_branch --count) -gt 0 ]; then
+        clear
+    PRINT "
+$BOLD$GREEN Updates Available :)\n"
+        read -p "Do you want to update it?(Y/N) " select
+        case $select in
+            Y|y) update_repo
+            ;;
+            N|n)
+    PRINT "
+$BOLD$YELLOW Returning to main Menu"
+                    UPDATE_STATUS=$(monitor_update)
+                    main
+            ;;
+            *)
+    PRINT "
+$BOLD$YELLOW INFO:$RESET Invalid Selection, Select options in Between Y/N..."
+            ;;
+        esac
+    else
+    PRINT "
+$BOLD$CYAN Already Up-to-date."
+    PRINT "
+$BOLD$YELLOW INFO:$RESET Press 'Enter' or any key to return main menu..."
+        read -r
+    fi
+}
+
+#Function to check whether ADB remote tcp is open or not.
+check_adb_port() {
+    local state=$(nmap -p 5555 127.0.0.1)
+    if echo "$state" | grep -q "open"; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+#Function to connect ADB to the device
+connect_adb() {
+    adb connect 127.0.0.1:5555 >/dev/null 2>&1
+}
+
+#Function to run adb shell command within localhost port to avoid conflicts
+run-shell() {
+    adb -s 127.0.0.1:5555 shell "$@" >/dev/null 2>&1
+}
+
+#function to print texts
+PRINT() {
+    local style=$1
+    local color=$2
+    local message=$3
+    echo -e "${style}${color}${message}${RESET}"
+}
+
+#spinner function
+spinner() {
+    local message=$1
+    local pid=$2
+    local delay=0.1
+    local colors=("31;5")
+    local spinstr='⣾⣽⣻⢿⡿⣟⣯⣷'
+    local i=0
+    tput civis
+    while ps -p $pid > /dev/null; do
+        local color=${colors[i++ % ${#colors[@]}]}
+        printf "\e[${color}m%s\e[0m" "${spinstr:i++%${#spinstr}:1}"
+        sleep $delay
+        printf "\b"
+    done
+    tput cnorm
+    printf "   \b\b\b"
+}
+
 memusage() {
-    BUFFCACHE_MEM=$(free -m | awk '/Mem/ {print $6}')
-    FREE_BUFF_MEM=$(free -m | awk '/Mem/ {print $4}')
-    AVAILABLE_MEM=$(free -m | awk '/Mem/ {print $7}')
-    TOTAL_MEM=$(free -m | awk '/Mem/ {print $2}')
-    TOTAL_USED_MEM=$(( $TOTAL_MEM - $AVAILABLE_MEM ))
-    PERCENT_USED_MEM=$(free -m | awk 'NR==2{printf "%.2f%%\n", $3*100/$2 }')
-    echo -e "$cyan Total Memory\t\t:$red $TOTAL_MEM $c_off MB"
-    echo -e "$cyan Used Memory\t\t:$red $TOTAL_USED_MEM $c_off MB"
-    echo -e "$cyan Available Memory\t:$red $AVAILABLE_MEM $c_off MB"
-    echo -e "$cyan Buffer+Cache Memory\t:$red $BUFFCACHE_MEM $c_off MB"
-    echo -e "$cyan Free Buff+Cache Memory\t:$red $FREE_BUFF_MEM $c_off MB"
-    echo -e "$cyan Memory Percentage Usage:$red $PERCENT_USED_MEM $c_off"
-    echo -e $c_off
+    clear
+    get_memory_info() {
+        local mem_info=$(free -m | awk '/Mem/ {print}')
+        TOTAL_MEM=$(awk '{print $2}' <<< "$mem_info")
+        AVAILABLE_MEM=$(awk '{print $7}' <<< "$mem_info")
+        TOTAL_USED_MEM=$(( TOTAL_MEM - AVAILABLE_MEM ))
+        BUFFCACHE_MEM=$(awk '{print $6}' <<< "$mem_info")
+        FREE_BUFF_MEM=$(awk '{print $4}' <<< "$mem_info")
+        PERCENT_USED_MEM=$(awk 'NR==2{printf "%.2f%%", $3*100/$2 }' <<< "$(free -m)")
+    }
+
+    print_memory_details() {
+    PRINT $BOLD"
+     $CYAN Total Memory:           $WHITE $TOTAL_MEM MB
+     $CYAN Used Memory:            $WHITE $TOTAL_USED_MEM MB
+     $CYAN Available Memory:       $WHITE $AVAILABLE_MEM MB
+     $CYAN Buffer+Cache Memory:    $WHITE $BUFFCACHE_MEM MB
+     $CYAN Free Buff+Cache Memory: $WHITE $FREE_BUFF_MEM MB
+     $CYAN Percentage Usage:       $WHITE $PERCENT_USED_MEM"
+}
+    get_memory_info
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Memory Details:$RESET"
+        print_memory_details
+    PRINT "
+$YELLOW$BOLD INFO:$RESET Press 'l' for Live Monitoring...
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
+        read -n 1 key
+        if [[ $key = "l" ]]; then
+                clear
+                while true; do
+                    tput cup 0
+                    tput el
+                    get_memory_info
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Memory Live Monitoring:$RESET"
+                    print_memory_details
+    PRINT "
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
+                    sleep 1
+                    read -n 1 -s -t 1 && break
+                done
+        fi
 }
 
 #CPU Information
 cpu() {
-        command cpufetch --color 239,90,45:210,200,200:0,0,0:100,200,45:0,200,200
-        echo -e $red
-        top -bn1 | grep load | awk '{printf "CPU Load: %.2f\n", $(NF-2)}'
-        echo -e $c_off
+    clear
+cpu_info() {
+    data=$(lscpu)
+    name=$(echo "$data" | grep "Vendor ID" | awk '{print $3}')
+    model=$(getprop ro.soc.model)
+    arch=$(echo "$data" | grep "Architecture" | awk '{print $2}')
+    cores=$(grep -c "^processor" /proc/cpuinfo)
+    governor=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
+    order=$(echo "$data" | awk '/Byte Order/ {for (i=3; i<=NF; i++) printf "%s ", $i}')
+    op_modes=$(echo "$data" | awk '/CPU op-mode\(s\)/ {print $(NF-1), $NF}')
+    features=$(awk '/Features/ && !flag {sub(/^[[:space:]]*Features[[:space:]]*:[[:space:]]*/, ""); print; flag=1}' /proc/cpuinfo)
+
+    model_names=$(lscpu | awk '/Model name/ {for (i=3; i<=NF; i++) printf "%s ", $i}')
+
+    min_max_values=$(lscpu | awk '/CPU (min|max) MHz:/ {print $NF}')
+
+    scaling_percentages=$(lscpu | grep -oP 'CPU\(s\) scaling MHz:\s+\K\d+%')
+
+    vulnerabilities=$(echo "$data" | grep -E "Vulnerability|bugs" | awk '/Vulnerability/ {gsub("Vulnerability ", ""); print $0}')
+
+    abi=$(getprop ro.product.cpu.abi)
+    s_abi=$(getprop ro.product.cpu.abilist)
+    # Number of CPUs
+    num_cpus=$(echo "$model_names" | wc -l)
+
+    PRINT "$BOLD
+     $CYAN Name:           $WHITE $name
+     $CYAN Model:          $WHITE $model
+     $CYAN Architecture:   $WHITE $arch
+     $CYAN Operation Mode: $WHITE $op_modes
+     $CYAN No. of Cores:   $WHITE $cores
+     $CYAN Governor:       $WHITE $governor
+     $CYAN ABI:            $WHITE $abi
+     $CYAN Supported ABIs: $WHITE $s_abi
+     $CYAN Byte Order:     $WHITE $order
+     $CYAN Model name:     $WHITE $(echo "$model_names" | awk NR==1)
+     $CYAN Min MHz:        $WHITE $(echo "$min_max_values" | awk NR==2)    $(echo "$min_max_values" | awk NR==4)
+     $CYAN Max MHz:        $WHITE $(echo "$min_max_values" | awk NR==1)   $(echo "$min_max_values" | awk NR==3)
+     $CYAN Max Scaling:    $WHITE $(echo "$scaling_percentages" | awk NR==1)            $(echo "$scaling_percentages" | awk NR==2)
+     $CYAN Features:       $WHITE $features
+     $UNDERLINE$RED Vulnerabilities:$RESET$BOLD
+$WHITE$vulnerabilities"
+
+}
+
+#default state of getting cpu load
+    cpu_load_without_adb() {
+        local cpu_usage=$(ps aux | awk 'BEGIN {sum=0} {sum+=$3}; END {printf "%.2f%%\n",sum}')
+    PRINT $BOLD"
+     $CYAN CPU Load(within Termux): $WHITE $cpu_usage"
+}
+
+#Function to read CPU stats from /proc/stat
+    read_cpu_stats() {
+        read cpu user nice system idle iowait irq softirq steal guest guest_nice <<< $(run-shell grep '^cpu ' /proc/stat)
+}
+
+#get CPU frequency
+read_cpu_mhz() {
+    local core_number=-1
+    local cores=()
+    local freqs=()
+
+    #loop through each CPU core.
+    for file in /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq; do
+
+        #get CPU core number.
+        ((core_number++))
+
+        #store it in array.
+        cores+=("$core_number")
+
+        #extract frequency values in KHz.
+        freq_khz=$(cat "$file")
+
+        # Convert kHz to MHz
+        freq_mhz=$(echo "scale=2; $freq_khz / 1000" | bc)
+        freqs+=("$freq_mhz")
+    done
+
+    for ((i=0; i<${#cores[@]}; i++)); do
+    PRINT $BOLD"
+     $CYAN CPU core ${cores[i]}:$WHITE ${freqs[i]} MHz"
+    done
+}
+
+#Function to calculate CPU usage percentage
+    calculate_cpu_usage() {
+        local prev_idle=$1
+        local prev_total=$2
+        local idle=$3
+        local total=$4
+
+        local idle_delta=$((idle - prev_idle))
+        local total_delta=$((total - prev_total))
+
+        # Avoid division by zero
+        if [[ $total_delta -eq 0 ]]; then
+            echo "0.00"
+            return
+        fi
+
+        local cpu_usage=$(bc -l <<< "scale=2; (1 - ($idle_delta /$total_delta)) * 100")
+        echo $cpu_usage
+}
+
+# Initial readings
+read_cpu_stats
+prev_idle=$idle
+prev_total=$((user + nice + system + idle + iowait + irq + softirq + steal))
+
+#fetch cpu load by adb
+    cpu_load_with_adb() {
+        read_cpu_stats
+        local cpu_usage=$(calculate_cpu_usage $prev_idle $prev_total $idle $((user + nice + system + idle + iowait + irq + softirq + steal)))
+        # Update previous values
+        prev_idle=$idle
+        prev_total=$((user + nice + system + idle + iowait + irq + softirq + steal))
+    PRINT $BOLD"
+     $CYAN Overall System Load:$WHITE $cpu_usage%"
+}
+
+#check status to run function by adb or without adb
+    check_status() {
+        if check_adb_port; then
+            connect_adb
+            cpu_load_with_adb
+        else
+    PRINT $BOLD"
+$YELLOW$BOLD INFO:$RESET Fetching CPU load via 'ps'"
+        cpu_load_without_adb
+    fi
+}
+
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA CPU Details:$RESET"
+        cpu_info
+       PRINT $BOLD"
+$UNDERLINE$MAGENTA CPU Load:$RESET"
+        check_status
+    PRINT "
+$YELLOW$BOLD INFO:$RESET Press 'l' for Live Monitoring...
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
+        read -n 1 key
+        if [[ $key = "l" ]]; then
+            clear
+            while true; do
+                tput cup 0
+                tput el
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA CPU Load Live Monitoring:$RESET"
+    PRINT $BOLD"
+     $CYAN Model name: $WHITE $(echo "$model_names" | awk NR==1)
+     $CYAN Min MHz:    $WHITE $(echo "$min_max_values" | awk NR==2)    $(echo "$min_max_values" | awk NR==4)
+     $CYAN Max MHz:    $WHITE $(echo "$min_max_values" | awk NR==1)   $(echo "$min_max_values" | awk NR==3)"
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA CPU Cores:$RESET"
+                read_cpu_mhz
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA CPU Load:$RESET"
+                check_status
+    PRINT "
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
+                sleep 1
+                read -n 1 -s -t 1 && break
+        done
+    fi
 }
 
 #Disk Usage
 disk() {
-    echo -e "$blue"
+    clear
+    echo -e ${BOLD} ${BLUE}
     df -h | awk '$NF=="/storage/emulated"{printf "Disk Usage: %d/%dGB (%s)\n", $3,$2,$5}'
-    echo -e "$c_off"
-
+    echo -e ${RESET}
+    PRINT "$BOLD
+$YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
+    read -r
 }
 
-#OS info By Neofetch
-OS() {
-        command neofetch --colors 3 4 5 2 1 | pv -qL 350
+#info about android software
+androidinfo() {
+    clear
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Android Software Info:$RESET$BOLD
+     $CYAN Brand:           $WHITE $(getprop ro.product.brand)
+     $CYAN Manufacturer:    $WHITE $(getprop ro.product.manufacturer)
+     $CYAN Device Model:    $WHITE $(getprop ro.product.model)
+     $CYAN Device UI:       $WHITE $(getprop ro.product.brand.ui)
+     $CYAN Android Version: $WHITE $(getprop ro.build.version.release)
+     $CYAN SDK Version:     $WHITE $(getprop ro.build.version.sdk)
+     $CYAN Build Number:    $WHITE $(getprop ro.build.display.id)
+     $CYAN Build Date:      $WHITE $(date -d @$(getprop ro.build.date.utc))
+     $CYAN Baseband:        $WHITE $(getprop gsm.version.baseband)
+     $CYAN Build Type:      $WHITE $(getprop ro.build.type)
+     $CYAN Build ID:        $WHITE $(getprop ro.product.build.id)
+     $CYAN Language:        $WHITE $(getprop persist.sys.locale)
+     $CYAN Timezone:        $WHITE $(getprop persist.sys.timezone)"
+     PRINT "$BOLD
+$YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
+    read -r
 }
 
+#wifi info
+wifi_info() {
+    local data=$(termux-wifi-connectioninfo)
+    local status=$(jq -r '.supplicant_state' <<< "$data")
+    local name=$(jq -r '.ssid' <<< "$data")
+    local hidden_state=$(jq -r '.ssid_hidden' <<< "$data")
+    local freq=$(jq -r '.frequency_mhz' <<< "$data")
+    local ip=$(jq -r '.ip' <<< "$data")
+    local mac_address=$(jq -r '.mac_address' <<< "$data")
+    local max_speed=$(jq -r '.link_speed_mbps' <<< "$data")
+
+    if [[ $status != "COMPLETED" ]]; then
+    PRINT $YELLOW "WiFi information not available."
+        return 1
+    fi
+    hidden_state=$( [[ "$hidden_state" == "true" ]] && echo "Yes" || echo "No" )
+
+    PRINT $BOLD"
+$UNDERLINE $MAGENTA WiFi Info:$RESET$BOLD
+     $CYAN WiFi Name:    $WHITE $name
+     $CYAN Hidden State: $WHITE $hidden_state
+     $CYAN Frequency:    $WHITE $freq MHz
+     $CYAN IP Address:   $WHITE $ip
+     $CYAN MAC Address:  $WHITE $mac_address
+     $CYAN Max Speed:    $WHITE $max_speed mbps"
+}
+
+#cellular info
+cellular_info() {
+    local data=$(termux-telephony-deviceinfo)
+    local network=$(jq -r '.network_operator_name' <<< "$data")
+    local type=$(jq -r '.network_type' <<< "$data")
+    local roaming=$(jq -r '.network_roaming' <<< "$data")
+    local data_enabled=$(jq -r '.data_enabled' <<< "$data")
+    local connection=$(jq -r '.data_state' <<< "$data")
+    local signal=$(jq -r '.signal_strength' <<< "$data")
+    local sim=$(jq -r '.sim_operator_name' <<< "$data")
+    local country=$(jq -r '.sim_country_iso' <<< "$data")
+    local state=$(jq -r '.sim_state' <<< "$data")
+    local dualsim=$(jq -r '.phone_count' <<< "$data")
+    local phone=$(jq -r '.phone_type' <<< "$data")
+
+    if [[ $state == "absent" ]]; then
+        echo "Cellular Network Info Not Available.."
+        return 1
+    fi
+
+    dualsim=$( [[ $dualsim -eq 2 ]] && echo "Yes" || echo "No" )
+    roaming=$( [[ $roaming == "true" ]] && echo "Enabled" || echo "Disabled" )
+    data_enabled=$( [[ $data_enabled == "true" ]] && echo "Enabled" || echo "Disabled" )
+
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Cellular Info:$RESET$BOLD
+     $CYAN Network Operator:   $WHITE $network
+     $CYAN Network Type:       $WHITE $type
+     $CYAN Roaming:            $WHITE $roaming
+     $CYAN Data Enabled:       $WHITE $data_enabled
+     $CYAN Data Connection:    $WHITE $connection
+     $CYAN Signal Strength:    $WHITE $signal
+     $CYAN SIM Operator:       $WHITE $sim
+     $CYAN SIM Country ISO:    $WHITE $country
+     $CYAN SIM State:          $WHITE $state
+     $CYAN Dual SIM Support:   $WHITE $dualsim
+     $CYAN Phone Network Type: $WHITE $phone"
+}
 
 #Network Information
 netstats () {
-    hostname=$(hostname)
-    echo -e "$cyan Host Name: $white $b_black $hostname $c_off"
-    externalip=$(curl -s ifconfig.me)
-    echo -e "$cyan External IP:$white $b_black $externalip $c_off"
-    internalip=$(hostname -i)
-    echo -e "$cyan Internal IP:$white $b_black $internalip $c_off"
-    if ping -q -c2 google.com &>/dev/null;
-    then
-        echo -e "$cyan Network Connection:$black $b_green You are Up :) $c_off"
-
+    clear
+    HOST_NAME=$(hostname)
+    EXTERNALIP=$(curl -4 ifconfig.me 2>/dev/null)
+    INTERNALIP=$(hostname -i)
+    local STATUS=$(
+    if ping -q -c2 google.com &>/dev/null; then
+        PRINT $BOLD $GREEN "You are Up :)"
     else
-        echo -e "$cyan Network Connection:$black $b_red Your are Down :( $c_off"
-    fi
+        PRINT $BOLD $RED "You are Down :("
+    fi)
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Network Basic Info:$RESET$BOLD
+     $CYAN Host Name:         $WHITE $HOST_NAME
+     $CYAN External IP:       $WHITE $EXTERNALIP
+     $CYAN Internal IP:       $WHITE $INTERNALIP
+     $CYAN Connection Status: $WHITE $STATUS"
+    cellular_info
+    wifi_info
+     PRINT "$BOLD
+$YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
+    read -r
 }
 
 
 #System Base Information like kernel uptime
 sysbaseinfo() {
-    echo -e $b_black
+    clear
     kn=$(uname -s)
     kv=$(uname -v)
     kr=$(uname -r)
@@ -125,60 +502,200 @@ sysbaseinfo() {
     ko=$(uname -o)
     uptime=$(uptime -p)
     suptime=$(uptime -s)
-    echo -e "$red Operating System: $c_off $blue $ko $c_off"
-    echo -e "$red Kernel Name: $c_off $blue $kn $c_off"
-    echo -e "$red Kernel Version: $c_off $blue $kr $c_off"
-    echo -e "$red Kernel Release: $c_off $blue $kv $c_off"
-    echo -e "$red System Architect: $c_off $blue $ka $c_off"
-    echo -e "$red System Uptime: $c_off $blue $uptime $c_off"
-    echo -e "$red System Since Boot: $c_off $blue $suptime $c_off"
-    echo -e $c_off
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Android Base Info:$RESET$BOLD
+     $CYAN Operating System:  $WHITE $ko
+     $CYAN Kernel Name:       $WHITE $kn
+     $CYAN Kernel Version:    $WHITE $kr
+     $CYAN Kernel Release:    $WHITE $kv
+     $CYAN System Architect:  $WHITE $ka
+     $CYAN System Uptime:     $WHITE $uptime
+     $CYAN System Since Boot: $WHITE $suptime"
+     PRINT "$BOLD
+$YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
+    read -r
 }
 
 
 #Network Speed Checker
-ispeed() {
-        echo -e "$green Plzz wait... This will take few minutes $c_off"
-        echo -e $purple
-        command speedtest-go
-        echo -e $c_off
+network_speed() {
+    clear
+    PRINT "
+$UNDERLINE$YELLOW Running SpeedTest, Please Wait..."
+    tmpfile=$(mktemp)
+    speedtest-go | grep -E "Download|Upload|Latency" > "$tmpfile" & 2>/dev/null
+
+    local pid=$!
+
+    spinner "Fetching innternet speed..." $pid
+
+    wait $pid
+
+    download=$(grep -oP "Download:\s+\K[0-9.]+" "$tmpfile")
+    upload=$(grep -oP "Upload:\s+\K[0-9.]+" "$tmpfile")
+    latency=$(grep -oP "Latency:\s+\K[0-9.]+" "$tmpfile")
+
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Internet Speed Data:$RESET$BOLD
+     $CYAN Download speed: $WHITE $download Mbps
+     $CYAN Upload speed:   $WHITE $upload Mbps
+     $CYAN Latency:        $WHITE $latency ms"
+
+    rm "$tmpfile"
+    PRINT "$BOLD
+$YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
+    read -r
 }
 
 battery() {
-    termux-battery-status | jtbl -r | awk '{ print "\033[0;95m" $1 "\033[0;0m" "\n\t" "\033[0;96m" $2 "\033[0;0m" }'
-    echo -e $yellow
-    echo -e "Press 'l' for live battery test"
-    echo -e "Press 'q' or 'ctrl+c' to quit"
-    echo -e $c_off
-    read -N 1 key
-    if [[ $key = "l" ]]; then
-        while true; do
-            termux-battery-status | jtbl -r | awk '{ print "\033[0;95m" $1 "\033[0;0m" "\n\t" "\033[0;96m" $2 "\033[0;0m" }'
-    read -N 1 -t 0.50 key
-    if [[ $key = "q" ]] || [[ $key = "ctrl+c" ]]; then
-        exit
-    fi
-        done
+    clear
+    get_batt_info() {
+    local data=$(termux-battery-status)
+    health=$(jq -r '.health' <<< "$data")
+    percentage=$(jq -r '.percentage' <<< "$data")
+    plugged=$(jq -r '.plugged' <<< "$data")
+    charging=$(jq -r '.status' <<< "$data")
+    temp=$(jq -r '.temperature' <<< "$data")
+    current=$(jq -r '.current' <<< "$data")
+}
+    print_batt_details() {
+    PRINT $BOLD"
+     $CYAN Percentage:  $WHITE $percentage%
+     $CYAN Health:      $WHITE $health
+     $CYAN Current:     $WHITE $current
+     $CYAN Temperature: $WHITE $temp
+     $CYAN Plugged:     $WHITE $plugged
+     $CYAN Charging:    $WHITE $charging"
+    }
+        get_batt_info
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Battery Statistics:$RESET"
+        print_batt_details
+    PRINT "
+$YELLOW$BOLD INFO:$RESET Press 'l' for Live Monitoring...
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
+        read -n 1 key
+        if [[ $key = "l" ]]; then
+            clear
+            while true; do
+                tput cup 0
+                tput el
+                get_batt_info
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Battery Live Monitoring:$RESET"
+                print_batt_details
+    PRINT "
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
+                read -n 1 -s -t 1 && break;
+            done
     fi
 }
 
-#Help Function while how to use the Argument
-#Based running the Script
-_help() {
-    echo -e "$b_black"
-    echo -e "Usage: Options.";
-    echo -e "--os|os - OS Info By Neofetch."
-    echo -e "--disk|D - Shows the disk Usage."
-    echo -e "--cpu|C - CPU INFORMATION."
-    echo -e "--mem|M - Shows the Memory usage."
-    echo -e "--sysbinfo|s - Shows About Device Info."
-    echo -e "--netstat|N - Shows About NetWork Stats."
-    echo -e "--speed|S - Shows the Internet Speed."
-    echo -e "--battery|B - Battery Stat of this device."
-    echo -e "--help|h - Shows this Help Info."
-    echo -e "$red ***If Don't know how to do You can Directly run the Script without passing any Options***"
-    echo -e "$c_off"
+
+version() {
+    PRINT $BOLD"Android System Information
+     $WHITE Version: 2.0"
 }
+
+#Help Function
+_help() {
+    PRINT $WHITE"$BOLD
+Usage:$RESET <commands>.
+
+A tool for displaying Android System Information
+$BOLD
+Flags:$RESET
+     -h, --help    Show this help.
+     -v, --version Print the version number
+$BOLD
+Commands:$RESET
+     android    Display Android System Overview.
+     disk       Show disk usage.
+     cpu        View CPU Information.
+     memory     Display memory usage.
+     sysbinfo   Provide system information.
+     netstats   Show network statistics.
+     speed      Measure internet Speed.
+     battery    Display battery statistics.
+$BOLD
+Example:$RESET
+     sysinfo disk
+     "
+}
+
+netstat_help() {
+    PRINT $WHITE"$BOLD
+Usage:$RESET sysinfo netstats [<options> ].
+$BOLD
+Flags:$RESET
+     --wifi     - Show Wi-Fi connection Information if available.
+     --cellular - Show cellular connection Information if available.
+     --help     - Shows this Help.
+$BOLD
+Example:$RESET
+     sysinfo netstats --wifi
+     "
+}
+
+#check adb status
+ADB_STATUS=$(
+if check_adb_port; then
+    PRINT "$BOLD$GREEN Connected"
+else
+    PRINT "$BOLD$RED Disconnected"
+fi)
+
+display_menu() {
+    PRINT "
+$BOLD$BLUE $(figlet -c -t -f term "SYSTEM INFORMATION v2.0")
+
+$BOLD$YELLOW $(figlet -c -t -f term "Github: https://github.com/Aj-Seven/Android-Sysinfo")
+
+$BOLD$CYAN $(figlet -c -t -f digital "Author: @Aj-Seven")
+  $BOLD$MAGENTA Updates:$RESET$BOLD$WHITE$UPDATE_STATUS$RESET      $BOLD$MAGENTA ADB:$RESET$ADB_STATUS
+
+$UNDERLINE Select the options below:$RESET$BOLD$WHITE
+        01) Android Info
+        02) Disk Fetch
+        03) CPU Info
+        04) Memory Fetch
+        05) System BaseInfo
+        06) Network Stats
+        07) Internet Speed
+        08) Battery Stats
+        09) Check Updates
+        00) Quit\n"
+}
+
+main() {
+    clear
+    display_menu
+    read -n1 opt
+    case $opt in
+        1) androidinfo ;;
+        2) disk ;;
+        3) cpu ;;
+        4) memusage ;;
+        5) sysbaseinfo ;;
+        6) netstats ;;
+        7) network_speed ;;
+        8) battery;;
+        9) check_update ;;
+        0)  PRINT $RED "Exiting...:)"
+            sleep 0.5s;
+            exit 0;
+            ;;
+        *)
+            PRINT $CYAN "Error Selection. Try Again..."
+            ;;
+    esac
+}
+
+
+# Set the default PREFIX if not provided
+if [ -z "$PREFIX" ]; then
+    PREFIX="/data/data/com.termux/files/usr/"
+fi
 
 if [ $# -eq 0 ]; then
        command clear
@@ -189,19 +706,44 @@ fi
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        os|--os) OS;;
-        D|--disk) disk;;
-        C|--cpu) cpu;;
-        M|--mem) memusage;;
-        s|--sysbinfo) sysbaseinfo;;
-        N|--netstat) netstats;;
-        S|--speed) ispeed;;
-        B|--battery) battery;;
-        h|--help) _help ;;
-        *) echo "Unknown Option: $1";
-            _help
+        -v|--version) version;;
+        android) androidinfo;;
+        disk) disk;;
+        cpu) cpu;;
+        memory) memusage;;
+        sysbinfo) sysbaseinfo;;
+        netstats)
+            case "$2$3" in
+                "--wifi--cellular" | "--cellular--wifi")
+                    wifi_info
+                    cellular_info
+                    ;;
+                "--wifi")
+                    wifi_info
+                    ;;
+                "--cellular")
+                    cellular_info
+                    ;;
+                "--help")
+                    netstat_help
+                    ;;
+                *)
+                    if [ -z "$2" ] && [ -z "$3" ]; then
+                        netstats
+                    else
+                        netstat_help
+
+                        PRINT $RED $BOLD"Error:$RESET Unknown Option '$2$3'"
+                    fi
+            esac
+            break
+            ;;
+        speed) network_speed;;
+        battery) battery;;
+        -h|--help) _help ;;
+        *) _help
+            PRINT $RED $BOLD"Error:$RESET Unknown Option '$1'"
             exit 1;;
     esac
     shift
 done
-

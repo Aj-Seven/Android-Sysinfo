@@ -1,90 +1,103 @@
 #!/data/data/com.termux/files/usr/bin/bash
+
+#Author: Abdul Jaber(Aj-Seven)
+#Github: @Aj-Seven
+#Reddit: @A_J07
+
 red='\033[1;91m'
 green='\033[1;92m'
 off='\033[0;0m'
 cyan='\033[1;96m'
-b_black='\033[40m'
+yellow='\033[1;33m'
 white='\033[1;97m'
 
-echo -e $b_black $white
-echo -e "$red Installing Required Dependecies. plzz wait...:) $off"
+clear
+echo -e "$yellow Name:$off$white sysinfo installer$off"
+echo -e "$yellow Version:$off$white V2.0$off"
+echo -e "$white Installing Required Dependencies. Please wait... :) $off"
 
-#Update the pkgs...
-pkg update && pkg upgrade
+# Function to install package and show message
+install_package() {
+    local package_name="$1"
+    if ! command -v "$package_name" >/dev/null 2>&1; then
+        echo -e "$cyan (Installing $package_name...) $off"
+        if apt install -y "$package_name" >/dev/null 2>&1; then
+            echo -e "$green Installed $package_name successfully $off"
+        else
+            echo -e "$red Failed to install $package_name $off"
+        fi
+    else
+        echo -e "$green $package_name is already installed $off"
+    fi
+}
 
-#install curl pkg...
-curl --version
-status=$?
-if [ "$status" != 0 ]; then
-    echo -e "$cyan (Installing Curl...) $off"
-    apt install -y curl
+
+install_script() {
+    REPO_URL="https://github.com/Aj-Seven/Android-Sysinfo"
+    REPO_DIR="$PREFIX/share/Android-Sysinfo"
+    SCRIPT_NAME="sysinfo"
+    BIN_DIR="$PREFIX/bin"
+    SCRIPT_PATH="$BIN_DIR/$SCRIPT_NAME"
+
+    echo -e "$red Deleting files from previous installation... $off"
+    rm -rf $SCRIPT_PATH $REPO_DIR; true; 
+
+    # Clone the repository directory
+    echo -e "$cyan Cloning repository directory... $off"
+    git clone "$REPO_URL" "$REPO_DIR" > /dev/null 2>&1
+    #link script to bin directory
+    echo -e "$yellow Creating symbolic link to the script in the bin directory... $off"
+    ln -s "$REPO_DIR/$SCRIPT_NAME" "$SCRIPT_PATH"
+    echo -e "$green Script linked Successfully... $off"
+            
+    # Check if the repository directory was successfully cloned
+    if [ -d "$REPO_DIR" ]; then
+        echo -e "$green Repository directory cloned Successfully... $off"
+        # Check if the script file exists in the repository directory
+        if [ -f "$SCRIPT_PATH" ]; then
+            # Create a symbolic link to the script in the bin directory
+           echo -e "$green Script Installed Successfully, Run it by sysinfo $off"
+        else
+            echo -e "$red Script not Installed :( $off"
+        fi
+    else
+        echo -e "$red Failed to clone repository directory $off"
+    fi
+}
+
+# Function to check if tput exists under ncurses-utils package
+check_without_version() {
+    if [[ (-f $PREFIX/bin/termux-battery-status) && (-f $PREFIX/bin/tput) ]]; then
+        echo -e "$green termux-api is already installed!$off"
+        echo -e "$green tput is already installed$off"
+    elif apt install -y termux-api ncurses-utils >/dev/null 2>&1; then
+            echo -e "$green Installed termux-api successfully$off"
+            echo -e "$green Installed tput successfully$off"
+    else
+            echo -e "$red failed to installed termux-api and tput$off"
+    fi
+}
+
+# Check if tput exists under ncurses-utils package...
+check_without_version
+
+# Install curl package...
+install_package curl
+
+# Install figlet package...
+install_package figlet
+
+# Install bc package...
+install_package bc
+
+# Install jq package...
+install_package jq
+
+
+# Set the default PREFIX if not provided
+if [ -z "$PREFIX" ]; then
+    PREFIX="/data/data/com.termux/files/usr/"
 fi
 
-#install figlet pkg...
-figlet -v
-status=$?
-if [ "$status" != 0 ]; then
-    echo -e "$cyan (Installing figlet...) $off"
-    apt install -y figlet
-fi
-
-#install pv pkg...
-pv --version
-status=$?
-if [ "$status" != 0 ]; then
-    echo -e "$cyan (Installing pv...) $off"
-    apt install -y pv
-fi
-
-#check neofetch program...
-if [ ! -f $PREFIX/bin/neofetch ] || [ ! -f $HOME/.local/bin/neofetch ]; then
-    echo -e "$cyan (Installing neofetch...) $off"
-    apt install -y neofetch
-fi
-
-#install cpufetch pkg...
-cpufetch --version
-status=$?
-if [ "$status" != 0 ]; then
-    echo -e "$cyan (Installing cpufetch...) $off"
-    apt install -y cpufetch
-fi
-
-#install speedtest-go pkg...
-speedtest-go --version
-status=$?
-if [ "$status" != 0 ]; then
-    echo -e "$cyan (Installing speedtest-go...) $off"
-    apt install -y speedtest-go
-fi
-
-#install python && pip pkg's...
-python --version
-pip --version
-status=$?
-if [ "$status" != 0 ]; then
-    echo -e "$cyan (Installing python...) $off"
-    apt install -y python
-fi
-
-pip install jtbl
-
-#install termux-api pkg...
-apt install -y termux-api
-
-#remove the script of old version
-if [ -f $PREFIX/bin/sysinfo ]; then
-    rm $PREFIX/bin/sysinfo
-fi
-
-#Install sysinfo script by curl
-curl https://raw.githubusercontent.com/Aj-Seven/Android-Sysinfo/master/sysinfo >$PREFIX/bin/sysinfo
-
-#giving executable permission to sysinfo script
-chmod +x $PREFIX/bin/sysinfo
-echo -e "$green Installed the sysinfo Script $off"
-
-sleep 0.5
-echo -e "$green (Now Run the script by sysinfo...) $off"
-echo -e $off
-rm sys-install.sh
+# Execute the install_script function
+install_script
