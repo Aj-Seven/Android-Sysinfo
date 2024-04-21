@@ -637,6 +637,14 @@ Example:$RESET
      "
 }
 
+#check adb status
+ADB_STATUS=$(
+if check_adb_port; then
+    PRINT "$BOLD$GREEN Connected"
+else
+    PRINT "$BOLD$RED Disconnected"
+fi)
+
 display_menu() {
     PRINT "
 $BOLD$BLUE $(figlet -c -t -f term "SYSTEM INFORMATION v2.0")
@@ -644,6 +652,8 @@ $BOLD$BLUE $(figlet -c -t -f term "SYSTEM INFORMATION v2.0")
 $BOLD$YELLOW $(figlet -c -t -f term "Github: https://github.com/Aj-Seven/Android-Sysinfo")
 
 $BOLD$CYAN $(figlet -c -t -f digital "Author: @Aj-Seven")
+  $BOLD$MAGENTA Updates:$RESET$BOLD$WHITE$UPDATE_STATUS$RESET      $BOLD$MAGENTA ADB:$RESET$ADB_STATUS
+
 $UNDERLINE Select the options below:$RESET$BOLD$WHITE
         01) Android Info
         02) Disk Fetch
