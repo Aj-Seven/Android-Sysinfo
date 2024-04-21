@@ -78,7 +78,7 @@ check_update() {
         clear
     PRINT "
 $BOLD$GREEN Updates Available :)\n"
-        read -p "Do yout want to update it(Y/N)?" select
+        read -p "Do you want to update it?(Y/N) " select
         case $select in
             Y|y) update_repo
             ;;
@@ -90,9 +90,15 @@ $BOLD$YELLOW Returning to main Menu"
             ;;
             *)
     PRINT "
-$BOLD$YELLOW INFO:$RESET Invalid Selection, Select in Between Y/N..."
+$BOLD$YELLOW INFO:$RESET Invalid Selection, Select options in Between Y/N..."
             ;;
         esac
+    else
+    PRINT "
+$BOLD$CYAN Already Up-to-date."
+    PRINT "
+$BOLD$YELLOW INFO:$RESET Press 'Enter' or any key to return main menu..."
+        read -r
     fi
 }
 
