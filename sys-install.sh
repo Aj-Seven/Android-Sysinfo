@@ -39,11 +39,8 @@ install_script() {
     BIN_DIR="$PREFIX/bin"
     SCRIPT_PATH="$BIN_DIR/$SCRIPT_NAME"
 
-   
-    if [[ (-L $SCRIPT_PATH ) && (-d $REPO_DIR ) ]]; then
-            echo -e "$red Deleting files from previous installation... $off"
-            rm -rf $SCRIPT_PATH $REPO_DIR; true;
-    fi 
+    echo -e "$red Deleting files from previous installation... $off"
+    rm -rf $SCRIPT_PATH $REPO_DIR; true; 
 
     # Clone the repository directory
     echo -e "$cyan Cloning repository directory... $off"
