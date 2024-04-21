@@ -79,6 +79,7 @@ check_without_version() {
             echo -e "$green Installed tput successfully$off"
         else
             echo -e "$red failed to installed termux-api and tput$off"
+        fi
     fi
 }
 
