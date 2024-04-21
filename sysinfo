@@ -15,6 +15,87 @@ BOLD=$(tput bold)
 UNDERLINE=$(tput smul)
 NO_UNDERLINE=$(tput rmul)
 
+#store repo info
+REPO_DIR="$PREFIX/share/Android-Sysinfo"
+SCRIPT_NAME="sysinfo"
+REPO_URL="https://github.com/Aj-Seven/Android-Sysinfo"
+BIN_DIR="$PREFIX/bin"
+
+# Global variable to store update status
+UPDATE_STATUS=""
+
+# Function to update the repository
+update_repo() {
+    cd "$REPO_DIR" || exit 1
+
+    # Run git pull origin and parse the output to show only relevant lines
+   if output=$(git pull origin $(git rev-parse --abbrev-ref HEAD) 2>&1); then
+        if echo "$output" | grep -q 'Already up to date'; then
+            echo "up-to-date"
+        elif echo "$output" | grep -q 'Updating'; then
+            echo "updated"
+    PRINT "
+$BOLD$YELLOW Updated the script, start it again to apply changes..."
+            exit 0
+        else
+            echo "Failed"
+        fi
+    fi
+}
+
+# Function to check for updates in the repository
+monitor_update() {
+    # Check if the repository folder exists
+    if [ ! -d "$REPO_DIR" ]; then
+        git clone "$REPO_URL" "$REPO_DIR" > /dev/null 2>&1 || { UPDATE_STATUS="failed"; return; }
+    fi
+
+    # Fetch updates forcefully
+    cd "$REPO_DIR" || { UPDATE_STATUS="failed"; return; }
+    git fetch --force origin > /dev/null 2>&1
+
+    # Get the current branch
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+    # Check if the local branch is behind the remote branch
+    if [ $(git rev-list HEAD...origin/$current_branch --count) -gt 0 ]; then
+        echo "available"
+    else
+        echo "up-to-date"
+    fi 
+}
+UPDATE_STATUS=$(monitor_update)
+
+#check update function for menu selection
+check_update() {
+    clear
+    cd "$REPO_DIR" || { UPDATE_STATUS="failed"; return; }
+    git fetch --force origin > /dev/null 2>&1
+
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+    if [ $(git rev-list HEAD...origin/$current_branch --count) -gt 0 ]; then
+        clear
+    PRINT "
+$BOLD$GREEN Updates Available :)\n"
+        read -p "Do yout want to update it(Y/N)?" select
+        case $select in
+            Y|y) update_repo
+            ;;
+            N|n)
+    PRINT "
+$BOLD$YELLOW Returning to main Menu"
+                    UPDATE_STATUS=$(monitor_update)
+                    main
+            ;;
+            *)
+    PRINT "
+$BOLD$YELLOW INFO:$RESET Invalid Selection, Select in Between Y/N..."
+            ;;
+        esac
+    fi
+}
+
 #Function to check whether ADB remote tcp is open or not.
 check_adb_port() {
     local state=$(nmap -p 5555 127.0.0.1)
@@ -566,6 +647,7 @@ $UNDERLINE Select the options below:$RESET$BOLD$WHITE
         06) Network Stats
         07) Internet Speed
         08) Battery Stats
+        09) Check Updates
         00) Quit\n"
 }
 
@@ -582,6 +664,7 @@ main() {
         6) netstats ;;
         7) network_speed ;;
         8) battery;;
+        9) check_update ;;
         0)  PRINT $RED "Exiting...:)"
             sleep 0.5s;
             exit 0;
@@ -591,6 +674,12 @@ main() {
             ;;
     esac
 }
+
+
+# Set the default PREFIX if not provided
+if [ -z "$PREFIX" ]; then
+    PREFIX="/data/data/com.termux/files/usr/"
+fi
 
 if [ $# -eq 0 ]; then
        command clear
