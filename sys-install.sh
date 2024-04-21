@@ -11,6 +11,9 @@ cyan='\033[1;96m'
 yellow='\033[1;33m'
 white='\033[1;97m'
 
+clear
+echo -e "$yellow Name:$off$white sysinfo installer$off"
+echo -e "$yellow Version:$off$white V2.0$off"
 echo -e "$white Installing Required Dependencies. Please wait... :) $off"
 
 # Function to install package and show message
