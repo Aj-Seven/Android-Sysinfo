@@ -73,13 +73,11 @@ check_without_version() {
     if [[ (-f $PREFIX/bin/termux-battery-status) && (-f $PREFIX/bin/tput) ]]; then
         echo -e "$green termux-api is already installed!$off"
         echo -e "$green tput is already installed$off"
-    else
-        if apt install -y termux-api ncurses-utils >/dev/null 2>&1; then
+    elif apt install -y termux-api ncurses-utils >/dev/null 2>&1; then
             echo -e "$green Installed termux-api successfully$off"
             echo -e "$green Installed tput successfully$off"
-        else
+    else
             echo -e "$red failed to installed termux-api and tput$off"
-        fi
     fi
 }
 
