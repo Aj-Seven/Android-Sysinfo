@@ -69,14 +69,17 @@ install_script() {
 }
 
 # Function to check if tput exists under ncurses-utils package
-check_tput() {
-    if ! command -v tput &> /dev/null; then
+check_without_version() {
+    if ! command tput &> /dev/null; then
         install_package ncurses-utils
+    fi
+    if ! command termux-battery-status &> /dev/null; then
+        install_package termux-api
     fi
 }
 
 # Check if tput exists under ncurses-utils package...
-check_tput
+check_without_version
 
 # Install curl package...
 install_package curl
