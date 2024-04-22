@@ -76,7 +76,7 @@ check_without_version() {
     else
             echo -e "$red failed to installed termux-api and tput$off"
     fi
-},
+}
 
 # Check if tput exists under ncurses-utils package...
 check_without_version
