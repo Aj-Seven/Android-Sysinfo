@@ -369,12 +369,22 @@ $YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
 #Disk Usage
 disk() {
     clear
-    echo -e ${BOLD} ${BLUE}
-    df -h | awk '$NF=="/storage/emulated"{printf "Disk Usage: %d/%dGB (%s)\n", $3,$2,$5}'
-    echo -e ${RESET}
-    PRINT "$BOLD
-$YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
-    read -r
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Disk Usage:$RESET"
+    duf -only-fs sdcardfs
+    PRINT "
+$YELLOW$BOLD INFO:$RESET Press 'm' to get all disk usage...
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
+    read -n 1 key
+    if [[ $key = "m" ]]; then
+        clear
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Disk Usage(all):$RESET"
+        duf
+    PRINT "
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
+    read -n 1 && break
+    fi
 }
 
 #info about android software
