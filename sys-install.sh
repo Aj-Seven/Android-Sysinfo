@@ -68,7 +68,7 @@ install_script() {
 # Function to check if tput exists under ncurses-utils package
 check_without_version() {
     if [[ (-f $PREFIX/bin/termux-battery-status) && (-f $PREFIX/bin/tput) ]]; then
-        echo -e "$green termux-api is already installed!$off"
+        echo -e "$green termux-api is already installed$off"
         echo -e "$green tput is already installed$off"
     elif apt install -y termux-api ncurses-utils >/dev/null 2>&1; then
             echo -e "$green Installed termux-api successfully$off"
@@ -76,7 +76,7 @@ check_without_version() {
     else
             echo -e "$red failed to installed termux-api and tput$off"
     fi
-}
+},
 
 # Check if tput exists under ncurses-utils package...
 check_without_version
@@ -92,6 +92,12 @@ install_package bc
 
 # Install jq package...
 install_package jq
+
+# Install nmap package...
+install_package nmap
+
+# Install speedtest-go...
+install_package speedtest-go
 
 
 # Set the default PREFIX if not provided
