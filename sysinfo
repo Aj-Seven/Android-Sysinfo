@@ -119,7 +119,7 @@ connect_adb() {
 
 #Function to run adb shell command within localhost port to avoid conflicts
 run-shell() {
-    adb -s 127.0.0.1:5555 shell "$@" >/dev/null 2>&1
+    adb -s 127.0.0.1:5555 shell "$@"
 }
 
 #function to print texts
@@ -209,11 +209,11 @@ cpu_info() {
     op_modes=$(echo "$data" | awk '/CPU op-mode\(s\)/ {print $(NF-1), $NF}')
     features=$(awk '/Features/ && !flag {sub(/^[[:space:]]*Features[[:space:]]*:[[:space:]]*/, ""); print; flag=1}' /proc/cpuinfo)
 
-    model_names=$(lscpu | awk '/Model name/ {for (i=3; i<=NF; i++) printf "%s ", $i}')
+    model_names=$(echo "$data" | awk '/Model name/ {for (i=3; i<=NF; i++) printf "%s ", $i}')
 
-    min_max_values=$(lscpu | awk '/CPU (min|max) MHz:/ {print $NF}')
+    min_max_values=$(echo "$data" | awk '/CPU (min|max) MHz:/ {print $NF}')
 
-    scaling_percentages=$(lscpu | grep -oP 'CPU\(s\) scaling MHz:\s+\K\d+%')
+    scaling_percentages=$(echo "$data" | grep -oP 'CPU\(s\) scaling MHz:\s+\K\d+%')
 
     vulnerabilities=$(echo "$data" | grep -E "Vulnerability|bugs" | awk '/Vulnerability/ {gsub("Vulnerability ", ""); print $0}')
 
