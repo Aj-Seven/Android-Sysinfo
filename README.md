@@ -6,7 +6,8 @@
 <a href='#'><img src="https://img.shields.io/badge/Made%20with-Bash-1f425f.svg"></img><a/>
 </p>
 <p align="center">
-![](https://api.visitorbadge.io/api/VisitorHit?user=Aj-Seven&repo=github-visitors-badge&countColor=%237B1E7A)
+<a href='#'><IMG
+src=https://api.visitorbadge.io/api/VisitorHit?user=Aj-Seven&repo=github-visitors-badge></img></a>
 <a href='#'><img src=https://img.shields.io/badge/Maintained%3F-yes-green.svg></img><a/>
 </p>
 
