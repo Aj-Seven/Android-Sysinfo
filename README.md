@@ -5,6 +5,9 @@
 <img src="https://img.shields.io/badge/shell_script-%23121011.svg?style=for-the-badge&logo=gnu-bash&logoColor=white">
 <a href='#'><img src="https://img.shields.io/badge/Made%20with-Bash-1f425f.svg"></img><a/>
 </p>
+<p align="center">
+<a href='#'><img src=https://img.shields.io/badge/Maintained%3F-yes-green.svg></img><a/>
+</p>
 
 ![MainMenu](https://github.com/Aj-Seven/Android-Sysinfo/assets/89263112/bd979abf-fd24-44f7-8665-2fae90b27a08)
 
