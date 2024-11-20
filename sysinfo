@@ -1,5 +1,9 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
+# Author: Abdul Jaber(Aj-Seven)
+# Github: @Aj-Seven
+# Reddit: @A_J07
+
 #color codes
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
