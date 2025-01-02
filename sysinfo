@@ -25,8 +25,13 @@ SCRIPT_NAME="sysinfo"
 REPO_URL="https://github.com/Aj-Seven/Android-Sysinfo"
 BIN_DIR="$PREFIX/bin"
 
-# Global variable to store update status
-UPDATE_STATUS=""
+# Function to print texts
+PRINT() {
+    local style=$1
+    local color=$2
+    local message=$3
+    echo -e "${style}${color}${message}${RESET}"
+}
 
 # Function to update the repository
 update_repo() {
@@ -63,12 +68,24 @@ monitor_update() {
 
     # Check if the local branch is behind the remote branch
     if [ $(git rev-list HEAD...origin/$current_branch --count) -gt 0 ]; then
-        echo "available"
+        return 0
     else
-        echo "up-to-date"
+        return 1
     fi 
 }
-UPDATE_STATUS=$(monitor_update)
+
+# Function to check the termux api android pkg availabity
+check_termux_api() {
+    # Capture the output and check if the string "Error: Not found" exists
+    local status=$(termux-api-start 2>&1 | grep -o "Error: Not found")
+    
+    # Compare the status with the string "Error: Not found"
+    if [ "$status" == "Error: Not found" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
 
 #check update function for menu selection
 check_update() {
@@ -124,14 +141,6 @@ connect_adb() {
 #Function to run adb shell command within localhost port to avoid conflicts
 run-shell() {
     adb -s 127.0.0.1:5555 shell "$@"
-}
-
-#function to print texts
-PRINT() {
-    local style=$1
-    local color=$2
-    local message=$3
-    echo -e "${style}${color}${message}${RESET}"
 }
 
 #spinner function
@@ -654,11 +663,28 @@ Example:$RESET
 #check adb status
 ADB_STATUS=$(
 if check_adb_port; then
-    PRINT "$BOLD$GREEN Connected"
+    PRINT "$BOLD$GREEN CONNECTED $RESET"
 else
-    PRINT "$BOLD$RED Disconnected"
+    PRINT "$BOLD$RED DIS-CONNECTED $RESET"
 fi)
 
+#check termux-api status
+TERMUX_API_STATUS=$(
+if check_termux_api; then
+    PRINT "$BOLD$RED NOT-INSTALLED"
+else
+    PRINT "$BOLD$GREEN INSTALLED"
+fi)
+
+#check script update status
+UPDATE_STATUS=$(
+if monitor_update; then
+    PRINT "$BOLD$GREEN AVAILABLE"
+else
+    PRINT "$BOLD$BLUE UP-TO-DATE"
+fi)
+
+# Display menu function
 display_menu() {
     PRINT "
 $BOLD$BLUE $(figlet -c -t -f term "SYSTEM INFORMATION v2.0")
@@ -666,7 +692,11 @@ $BOLD$BLUE $(figlet -c -t -f term "SYSTEM INFORMATION v2.0")
 $BOLD$YELLOW $(figlet -c -t -f term "Github: https://github.com/Aj-Seven/Android-Sysinfo")
 
 $BOLD$CYAN $(figlet -c -t -f digital "Author: @Aj-Seven")
-  $BOLD$MAGENTA Updates:$RESET$BOLD$WHITE$UPDATE_STATUS$RESET      $BOLD$MAGENTA ADB:$RESET$ADB_STATUS
+  
+        $BOLD$MAGENTA UPDATES:$RESET$UPDATE_STATUS | $BOLD$MAGENTA ADB:$RESET$ADB_STATUS
+
+        $BOLD$MAGENTA TERMUX-API:$RESET$TERMUX_API_STATUS
+
 
 $UNDERLINE Select the options below:$RESET$BOLD$WHITE
         01) Android Info
