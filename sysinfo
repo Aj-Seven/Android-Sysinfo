@@ -25,8 +25,13 @@ SCRIPT_NAME="sysinfo"
 REPO_URL="https://github.com/Aj-Seven/Android-Sysinfo"
 BIN_DIR="$PREFIX/bin"
 
-# Global variable to store update status
-UPDATE_STATUS=""
+# Function to print texts
+PRINT() {
+    local style=$1
+    local color=$2
+    local message=$3
+    echo -e "${style}${color}${message}${RESET}"
+}
 
 # Function to update the repository
 update_repo() {
@@ -63,12 +68,45 @@ monitor_update() {
 
     # Check if the local branch is behind the remote branch
     if [ $(git rev-list HEAD...origin/$current_branch --count) -gt 0 ]; then
-        echo "available"
+        return 0
     else
-        echo "up-to-date"
+        return 1
     fi 
 }
-UPDATE_STATUS=$(monitor_update)
+
+# Function to check the termux api android pkg availabity
+check_termux_api() {
+    # Capture the output and check if the string "Error: Not found" exists
+    local status=$(termux-api-start 2>&1 | grep -o "Error: Not found")
+    
+    # Compare the status with the string "Error: Not found"
+    if [ "$status" == "Error: Not found" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to check from termux_api and prompt request for installation
+termux_api_with_prompt_setup() {
+    if check_termux_api; then
+        clear
+        PRINT $BOLD"$RED Please Install termux-api in your device, to run this option$RESET
+
+$BLUE Visit here: $GREEN https://f-droid.org/en/packages/com.termux.api/$RESET
+
+$BOLD$WHITE Do you want to visit the site?? Enter Y"
+
+        read visit
+
+        if [[ $visit == "Y" ]] || [[ $visit == "y" ]]; then
+            xdg-open https://f-droid.org/en/packages/com.termux.api/
+        else
+            main 
+        fi
+    fi
+}
+
 
 #check update function for menu selection
 check_update() {
@@ -124,14 +162,6 @@ connect_adb() {
 #Function to run adb shell command within localhost port to avoid conflicts
 run-shell() {
     adb -s 127.0.0.1:5555 shell "$@"
-}
-
-#function to print texts
-PRINT() {
-    local style=$1
-    local color=$2
-    local message=$3
-    echo -e "${style}${color}${message}${RESET}"
 }
 
 #spinner function
@@ -416,6 +446,7 @@ $YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
 
 #wifi info
 wifi_info() {
+    termux_api_with-prompt_setup
     local data=$(termux-wifi-connectioninfo)
     local status=$(jq -r '.supplicant_state' <<< "$data")
     local name=$(jq -r '.ssid' <<< "$data")
@@ -443,6 +474,7 @@ $UNDERLINE $MAGENTA WiFi Info:$RESET$BOLD
 
 #cellular info
 cellular_info() {
+    termux_api_with_prompt_setup
     local data=$(termux-telephony-deviceinfo)
     local network=$(jq -r '.network_operator_name' <<< "$data")
     local type=$(jq -r '.network_type' <<< "$data")
@@ -498,11 +530,15 @@ $UNDERLINE$MAGENTA Network Basic Info:$RESET$BOLD
      $CYAN External IP:       $WHITE $EXTERNALIP
      $CYAN Internal IP:       $WHITE $INTERNALIP
      $CYAN Connection Status: $WHITE $STATUS"
-    cellular_info
-    wifi_info
-     PRINT "$BOLD
+     if check_termux_api; then 
+        PRINT "$BOLD
+$RED INFO:$RESET Some of data hidden, Please install termux-api to view properly...
 $YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
     read -r
+     else
+        wifi_info
+        cellular_info
+     fi
 }
 
 
@@ -561,17 +597,21 @@ $YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
     read -r
 }
 
+# battery function
 battery() {
     clear
+    termux_api_with_prompt_setup
+    
     get_batt_info() {
-    local data=$(termux-battery-status)
-    health=$(jq -r '.health' <<< "$data")
-    percentage=$(jq -r '.percentage' <<< "$data")
-    plugged=$(jq -r '.plugged' <<< "$data")
-    charging=$(jq -r '.status' <<< "$data")
-    temp=$(jq -r '.temperature' <<< "$data")
-    current=$(jq -r '.current' <<< "$data")
-}
+        local data=$(termux-battery-status)
+        health=$(jq -r '.health' <<< "$data")
+        percentage=$(jq -r '.percentage' <<< "$data")
+        plugged=$(jq -r '.plugged' <<< "$data")
+        charging=$(jq -r '.status' <<< "$data")
+        temp=$(jq -r '.temperature' <<< "$data")
+        current=$(jq -r '.current' <<< "$data")
+    }
+    
     print_batt_details() {
     PRINT $BOLD"
      $CYAN Percentage:  $WHITE $percentage%
@@ -581,34 +621,51 @@ battery() {
      $CYAN Plugged:     $WHITE $plugged
      $CYAN Charging:    $WHITE $charging"
     }
-        get_batt_info
+
+    get_batt_info
     PRINT $BOLD"
 $UNDERLINE$MAGENTA Battery Statistics:$RESET"
-        print_batt_details
+    print_batt_details
     PRINT "
 $YELLOW$BOLD INFO:$RESET Press 'l' for Live Monitoring...
 $YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
-        read -n 1 key
-        if [[ $key = "l" ]]; then
-            clear
-            while true; do
-                tput cup 0
-                tput el
-                get_batt_info
-    PRINT $BOLD"
+    read -n 1 key
+    if [[ $key == "l" ]]; then
+        clear
+        while true; do
+            tput cup 0
+            tput el
+            get_batt_info
+            PRINT $BOLD"
 $UNDERLINE$MAGENTA Battery Live Monitoring:$RESET"
-                print_batt_details
-    PRINT "
+            print_batt_details
+            PRINT "
 $YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
-                read -n 1 -s -t 1 && break;
-            done
+            read -n 1 -s -t 1 && break
+        done
     fi
 }
 
+# Sensors Info function
+get_sensor_info() {
+    clear
+    termux_api_with_prompt_setup
 
+    local data=$(termux-sensor -l)
+    local SENSORS=$(jq -r '.sensors[]' <<< "$data")
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Sensors List:$RESET
+        
+$WHITE$SENSORS
+
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
+    read -r
+}
+
+# Version 
 version() {
     PRINT $BOLD"Android System Information
-     $WHITE Version: 2.0"
+     $WHITE Version: 2.1.0"
 }
 
 #Help Function
@@ -631,6 +688,7 @@ Commands:$RESET
      netstats   Show network statistics.
      speed      Measure internet Speed.
      battery    Display battery statistics.
+     sensor     Get device sensors list.
 $BOLD
 Example:$RESET
      sysinfo disk
@@ -654,11 +712,28 @@ Example:$RESET
 #check adb status
 ADB_STATUS=$(
 if check_adb_port; then
-    PRINT "$BOLD$GREEN Connected"
+    PRINT "$BOLD$GREEN CONNECTED $RESET"
 else
-    PRINT "$BOLD$RED Disconnected"
+    PRINT "$BOLD$RED DIS-CONNECTED $RESET"
 fi)
 
+#check termux-api status
+TERMUX_API_STATUS=$(
+if check_termux_api; then
+    PRINT "$BOLD$RED NOT-INSTALLED"
+else
+    PRINT "$BOLD$GREEN INSTALLED"
+fi)
+
+#check script update status
+UPDATE_STATUS=$(
+if monitor_update; then
+    PRINT "$BOLD$GREEN AVAILABLE"
+else
+    PRINT "$BOLD$BLUE UP-TO-DATE"
+fi)
+
+# Display menu function
 display_menu() {
     PRINT "
 $BOLD$BLUE $(figlet -c -t -f term "SYSTEM INFORMATION v2.0")
@@ -666,7 +741,11 @@ $BOLD$BLUE $(figlet -c -t -f term "SYSTEM INFORMATION v2.0")
 $BOLD$YELLOW $(figlet -c -t -f term "Github: https://github.com/Aj-Seven/Android-Sysinfo")
 
 $BOLD$CYAN $(figlet -c -t -f digital "Author: @Aj-Seven")
-  $BOLD$MAGENTA Updates:$RESET$BOLD$WHITE$UPDATE_STATUS$RESET      $BOLD$MAGENTA ADB:$RESET$ADB_STATUS
+  
+        $BOLD$MAGENTA UPDATES:$RESET$UPDATE_STATUS | $BOLD$MAGENTA ADB:$RESET$ADB_STATUS
+
+        $BOLD$MAGENTA TERMUX-API:$RESET$TERMUX_API_STATUS
+
 
 $UNDERLINE Select the options below:$RESET$BOLD$WHITE
         01) Android Info
@@ -677,14 +756,15 @@ $UNDERLINE Select the options below:$RESET$BOLD$WHITE
         06) Network Stats
         07) Internet Speed
         08) Battery Stats
-        09) Check Updates
+        09) Sensor Info
+        10) Check Updates
         00) Quit\n"
 }
 
 main() {
     clear
-    display_menu
-    read -n1 opt
+    display_menu    
+    read opt
     case $opt in
         1) androidinfo ;;
         2) disk ;;
@@ -694,7 +774,8 @@ main() {
         6) netstats ;;
         7) network_speed ;;
         8) battery;;
-        9) check_update ;;
+        9) get_sensor_info;;
+        10) check_update ;;
         0)  PRINT $RED "Exiting...:)"
             sleep 0.5s;
             exit 0;
@@ -712,7 +793,7 @@ if [ -z "$PREFIX" ]; then
 fi
 
 if [ $# -eq 0 ]; then
-       command clear
+    command clear
     while true; do
         main
     done
@@ -754,6 +835,7 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         speed) network_speed;;
         battery) battery;;
+        sensor) get_sensor_info;;
         -h|--help) _help ;;
         *) _help
             PRINT $RED $BOLD"Error:$RESET Unknown Option '$1'"

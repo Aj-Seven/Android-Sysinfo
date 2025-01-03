@@ -21,7 +21,8 @@ src=https://api.visitorbadge.io/api/VisitorHit?user=Aj-Seven&repo=github-visitor
 - Memory and CPU functions optimized for better performance.
 - Continuous monitoring of CPU, memory, and battery in real-time.
 - sysinfo can now receive future updates.
-- Header menu shows updates and ADB status.
+- Header menu shows updates, termux-api and ADB status.
+- Now device sensors list will display.
 
 ## Installation :white_check_mark:
 
@@ -173,6 +174,12 @@ sysinfo Battery
 
 - **Update view**
 ![update](https://github.com/Aj-Seven/Android-Sysinfo/assets/89263112/56920f44-f78d-4a37-9cc9-ae78604999f9)
+
+- **Sensors Info**
+``` bash
+sysinfo sensor
+```
+![sensors](https://github.com/user-attachments/assets/490c60d2-9ed2-4321-93e6-2dabd71a3992)
 </details>
 
 ## Note
