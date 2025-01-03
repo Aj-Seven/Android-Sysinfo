@@ -87,6 +87,27 @@ check_termux_api() {
     fi
 }
 
+# Function to check from termux_api and prompt request for installation
+termux_api_with_prompt_setup() {
+    if check_termux_api; then
+        clear
+        PRINT $BOLD"$RED Please Install termux-api in your device, to run this option$RESET
+
+$BLUE Visit here: $GREEN https://f-droid.org/en/packages/com.termux.api/$RESET
+
+$BOLD$WHITE Do you want to visit the site?? Enter Y"
+
+        read visit
+
+        if [[ $visit == "Y" ]] || [[ $visit == "y" ]]; then
+            xdg-open https://f-droid.org/en/packages/com.termux.api/
+        else
+            main 
+        fi
+    fi
+}
+
+
 #check update function for menu selection
 check_update() {
     clear
@@ -425,6 +446,7 @@ $YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
 
 #wifi info
 wifi_info() {
+    termux_api_with-prompt_setup
     local data=$(termux-wifi-connectioninfo)
     local status=$(jq -r '.supplicant_state' <<< "$data")
     local name=$(jq -r '.ssid' <<< "$data")
@@ -452,6 +474,7 @@ $UNDERLINE $MAGENTA WiFi Info:$RESET$BOLD
 
 #cellular info
 cellular_info() {
+    termux_api_with_prompt_setup
     local data=$(termux-telephony-deviceinfo)
     local network=$(jq -r '.network_operator_name' <<< "$data")
     local type=$(jq -r '.network_type' <<< "$data")
@@ -507,11 +530,15 @@ $UNDERLINE$MAGENTA Network Basic Info:$RESET$BOLD
      $CYAN External IP:       $WHITE $EXTERNALIP
      $CYAN Internal IP:       $WHITE $INTERNALIP
      $CYAN Connection Status: $WHITE $STATUS"
-    cellular_info
-    wifi_info
-     PRINT "$BOLD
+     if check_termux_api; then 
+        PRINT "$BOLD
+$RED INFO:$RESET Some of data hidden, Please install termux-api to view properly...
 $YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
     read -r
+     else
+        wifi_info
+        cellular_info
+     fi
 }
 
 
@@ -570,17 +597,21 @@ $YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
     read -r
 }
 
+# battery function
 battery() {
     clear
+    termux_api_with_prompt_setup
+    
     get_batt_info() {
-    local data=$(termux-battery-status)
-    health=$(jq -r '.health' <<< "$data")
-    percentage=$(jq -r '.percentage' <<< "$data")
-    plugged=$(jq -r '.plugged' <<< "$data")
-    charging=$(jq -r '.status' <<< "$data")
-    temp=$(jq -r '.temperature' <<< "$data")
-    current=$(jq -r '.current' <<< "$data")
-}
+        local data=$(termux-battery-status)
+        health=$(jq -r '.health' <<< "$data")
+        percentage=$(jq -r '.percentage' <<< "$data")
+        plugged=$(jq -r '.plugged' <<< "$data")
+        charging=$(jq -r '.status' <<< "$data")
+        temp=$(jq -r '.temperature' <<< "$data")
+        current=$(jq -r '.current' <<< "$data")
+    }
+    
     print_batt_details() {
     PRINT $BOLD"
      $CYAN Percentage:  $WHITE $percentage%
@@ -590,31 +621,32 @@ battery() {
      $CYAN Plugged:     $WHITE $plugged
      $CYAN Charging:    $WHITE $charging"
     }
-        get_batt_info
+
+    get_batt_info
     PRINT $BOLD"
 $UNDERLINE$MAGENTA Battery Statistics:$RESET"
-        print_batt_details
+    print_batt_details
     PRINT "
 $YELLOW$BOLD INFO:$RESET Press 'l' for Live Monitoring...
 $YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
-        read -n 1 key
-        if [[ $key = "l" ]]; then
-            clear
-            while true; do
-                tput cup 0
-                tput el
-                get_batt_info
-    PRINT $BOLD"
+    read -n 1 key
+    if [[ $key == "l" ]]; then
+        clear
+        while true; do
+            tput cup 0
+            tput el
+            get_batt_info
+            PRINT $BOLD"
 $UNDERLINE$MAGENTA Battery Live Monitoring:$RESET"
-                print_batt_details
-    PRINT "
+            print_batt_details
+            PRINT "
 $YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
-                read -n 1 -s -t 1 && break;
-            done
+            read -n 1 -s -t 1 && break
+        done
     fi
 }
 
-
+# Version 
 version() {
     PRINT $BOLD"Android System Information
      $WHITE Version: 2.0"
