@@ -665,7 +665,7 @@ $YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
 # Version 
 version() {
     PRINT $BOLD"Android System Information
-     $WHITE Version: 2.0"
+     $WHITE Version: 2.1.0"
 }
 
 #Help Function
