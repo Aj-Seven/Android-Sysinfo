@@ -646,6 +646,22 @@ $YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
     fi
 }
 
+# Sensors Info function
+get_sensor_info() {
+    clear
+    termux_api_with_prompt_setup
+
+    local data=$(termux-sensor -l)
+    local SENSORS=$(jq -r '.sensors[]' <<< "$data")
+    PRINT $BOLD"
+$UNDERLINE$MAGENTA Sensors List:$RESET
+        
+$WHITE$SENSORS
+
+$YELLOW$BOLD INFO:$RESET Press 'Enter' or any key to Quit."
+    read -r
+}
+
 # Version 
 version() {
     PRINT $BOLD"Android System Information
@@ -672,6 +688,7 @@ Commands:$RESET
      netstats   Show network statistics.
      speed      Measure internet Speed.
      battery    Display battery statistics.
+     sensor     Get device sensors list.
 $BOLD
 Example:$RESET
      sysinfo disk
@@ -739,14 +756,15 @@ $UNDERLINE Select the options below:$RESET$BOLD$WHITE
         06) Network Stats
         07) Internet Speed
         08) Battery Stats
-        09) Check Updates
+        09) Sensor Info
+        10) Check Updates
         00) Quit\n"
 }
 
 main() {
     clear
-    display_menu
-    read -n1 opt
+    display_menu    
+    read opt
     case $opt in
         1) androidinfo ;;
         2) disk ;;
@@ -756,7 +774,8 @@ main() {
         6) netstats ;;
         7) network_speed ;;
         8) battery;;
-        9) check_update ;;
+        9) get_sensor_info;;
+        10) check_update ;;
         0)  PRINT $RED "Exiting...:)"
             sleep 0.5s;
             exit 0;
@@ -774,7 +793,7 @@ if [ -z "$PREFIX" ]; then
 fi
 
 if [ $# -eq 0 ]; then
-       command clear
+    command clear
     while true; do
         main
     done
@@ -816,6 +835,7 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         speed) network_speed;;
         battery) battery;;
+        sensor) get_sensor_info;;
         -h|--help) _help ;;
         *) _help
             PRINT $RED $BOLD"Error:$RESET Unknown Option '$1'"
