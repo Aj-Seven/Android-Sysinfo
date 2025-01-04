@@ -446,7 +446,7 @@ $YELLOW INFO:$RESET Press 'Enter' or any key to Quit..."
 
 #wifi info
 wifi_info() {
-    termux_api_with-prompt_setup
+    termux_api_with_prompt_setup
     local data=$(termux-wifi-connectioninfo)
     local status=$(jq -r '.supplicant_state' <<< "$data")
     local name=$(jq -r '.ssid' <<< "$data")
