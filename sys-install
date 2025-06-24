@@ -120,3 +120,9 @@ if ! install_pkg; then
     echo -e "$red Installation of packages failed. Exiting...$off"
     exit 1
 fi
+
+# Install script
+if ! install_script; then
+    echo -e "$red Installation of script failed. Exiting...$off"
+    exit 1
+fi
